@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createTransaction, getTransactions } from '@/lib/db'
 import { Transaction } from '@/types/trading'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const validTradeTypes: Transaction['type'][] = ['Buy', 'Sell', 'Incoming', 'Outgoing']
 const validAssets: Transaction['asset'][] = ['Dollars', 'LYD', 'Gold', 'Silver']
 
@@ -47,9 +50,10 @@ const parseTradePayload = (input: unknown): (Omit<Transaction, 'id'> & { id?: st
 export async function GET() {
   try {
     const items = await getTransactions()
-    return NextResponse.json({ items })
-  } catch {
-    return NextResponse.json({ items: [] })
+    return NextResponse.json({ items }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch (error) {
+    console.error('Failed to load trades', error)
+    return NextResponse.json({ error: 'Unable to load trades right now.' }, { status: 500 })
   }
 }
 
@@ -72,7 +76,8 @@ export async function POST(request: NextRequest) {
       timestamp: payload.timestamp,
     })
     return NextResponse.json(record, { status: 201 })
-  } catch {
+  } catch (error) {
+    console.error('Failed to store trade', error)
     return NextResponse.json({ error: 'Unable to store trade right now.' }, { status: 500 })
   }
 }

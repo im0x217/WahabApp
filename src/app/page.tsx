@@ -28,7 +28,15 @@ export default function HomePage() {
 
     const loadInitialData = async () => {
       try {
-        const [vaultsResponse, tradesResponse] = await Promise.all([fetch('/api/vaults'), fetch('/api/trades')])
+        const [vaultsResponse, tradesResponse] = await Promise.all([
+          fetch('/api/vaults', { cache: 'no-store' }),
+          fetch('/api/trades', { cache: 'no-store' }),
+        ])
+
+        if (!vaultsResponse.ok || !tradesResponse.ok) {
+          return
+        }
+
         const vaultsPayload = (await vaultsResponse.json()) as { items?: Vault[] }
         const tradesPayload = (await tradesResponse.json()) as { items?: Transaction[] }
 
@@ -167,6 +175,9 @@ export default function HomePage() {
 
     setFormError('')
 
+    const previousVaults = vaults
+    const previousLedger = ledger
+
     const nextVaults = vaults.map((vault) => {
       const shouldApplyToTarget = vault.id === activeVaultId
       const shouldApplyToMain = Boolean(isClientTransaction && mainVaultId && vault.id === mainVaultId)
@@ -194,7 +205,7 @@ export default function HomePage() {
 
     setLedger((previous) => [entry, ...previous])
 
-    await Promise.allSettled([
+    const [tradeResponse, vaultsResponse] = await Promise.all([
       fetch('/api/trades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -215,6 +226,13 @@ export default function HomePage() {
         body: JSON.stringify({ items: nextVaults }),
       }),
     ])
+
+    if (!tradeResponse.ok || !vaultsResponse.ok) {
+      setVaults(previousVaults)
+      setLedger(previousLedger)
+      setFormError('تعذر حفظ العملية في قاعدة البيانات. تحقق من إعداد DATABASE_URL وأعد المحاولة.')
+      return
+    }
 
     closeTrade()
   }

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getVaults, replaceVaults } from '@/lib/db'
 import { Vault } from '@/types/trading'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const validKinds: Vault['kind'][] = ['Main', 'Client']
 const requiredAssets: Array<keyof Vault['balances']> = ['Dollars', 'LYD', 'Gold', 'Silver']
 
@@ -24,9 +27,10 @@ const isValidVault = (input: unknown): input is Vault => {
 export async function GET() {
   try {
     const items = await getVaults()
-    return NextResponse.json({ items })
-  } catch {
-    return NextResponse.json({ items: [] })
+    return NextResponse.json({ items }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch (error) {
+    console.error('Failed to load vaults', error)
+    return NextResponse.json({ error: 'Unable to load vaults right now.' }, { status: 500 })
   }
 }
 
@@ -41,7 +45,8 @@ export async function POST(request: NextRequest) {
 
     await replaceVaults(items)
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (error) {
+    console.error('Failed to store vaults', error)
     return NextResponse.json({ error: 'Unable to store vault balances right now.' }, { status: 500 })
   }
 }
