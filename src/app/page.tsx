@@ -417,9 +417,9 @@ export default function HomePage() {
       </section>
 
       {showAssetCrud ? (
-        <div className="fixed inset-0 z-50 bg-black/60 p-0 sm:p-4" onClick={resetAssetDraft}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-2 py-2 sm:px-4 sm:py-4" onClick={resetAssetDraft}>
           <div
-            className="glass mx-auto flex h-[100dvh] w-full max-w-3xl flex-col rounded-none p-3 sm:mt-6 sm:h-auto sm:max-h-[92dvh] sm:rounded-3xl sm:p-4"
+            className="glass mx-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col overflow-x-hidden rounded-2xl p-3 sm:mt-6 sm:max-h-[92dvh] sm:rounded-3xl sm:p-4"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
