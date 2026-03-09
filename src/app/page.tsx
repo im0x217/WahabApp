@@ -9,6 +9,7 @@ import { TradeSheet } from '@/components/trade-sheet'
 import { VaultHero } from '@/components/vault-hero'
 import { buildEodSummary, formatDateTime, formatCurrency, getAssetLabel, getTradeLabel, seedVaults } from '@/lib/trading'
 import { AssetType, TradeType, Transaction, Vault } from '@/types/trading'
+import { ArrowDownToLine, ArrowUpFromLine, FileBarChart, TrendingDown, TrendingUp } from 'lucide-react'
 
 export default function HomePage() {
   const [vaults, setVaults] = useState<Vault[]>(seedVaults)
@@ -192,27 +193,27 @@ export default function HomePage() {
           <div className="mt-4 grid grid-cols-2 gap-2 sm:max-w-sm">
             <button
               onClick={() => openTrade(mainVault.id, 'Buy')}
-              className="rounded-2xl bg-emerald-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-400 active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-1 rounded-2xl bg-emerald-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-400 active:scale-[0.98]"
             >
-              شراء في الخزنة الرئيسية
+              <TrendingUp size={16} />شراء في الخزنة الرئيسية
             </button>
             <button
               onClick={() => openTrade(mainVault.id, 'Sell')}
-              className="rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-rose-400 active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-1 rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-rose-400 active:scale-[0.98]"
             >
-              بيع من الخزنة الرئيسية
+              <TrendingDown size={16} />بيع من الخزنة الرئيسية
             </button>
             <button
               onClick={() => openTrade(mainVault.id, 'Incoming')}
-              className="rounded-2xl bg-sky-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-sky-400 active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-1 rounded-2xl bg-sky-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-sky-400 active:scale-[0.98]"
             >
-              وارد للخزنة الرئيسية
+              <ArrowDownToLine size={16} />وارد للخزنة الرئيسية
             </button>
             <button
               onClick={() => openTrade(mainVault.id, 'Outgoing')}
-              className="rounded-2xl bg-amber-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-amber-400 active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-1 rounded-2xl bg-amber-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-amber-400 active:scale-[0.98]"
             >
-              صادر من الخزنة الرئيسية
+              <ArrowUpFromLine size={16} />صادر من الخزنة الرئيسية
             </button>
           </div>
         </section>
@@ -270,10 +271,10 @@ export default function HomePage() {
       <button
         type="button"
         onClick={() => setShowReport((prev) => !prev)}
-        className="fixed bottom-20 left-4 z-40 rounded-full bg-sky-500 px-5 py-3.5 text-sm font-semibold text-white shadow-soft transition hover:bg-sky-400 active:scale-[0.98] sm:bottom-6"
+        className="fixed bottom-20 left-4 z-40 inline-flex items-center gap-2 rounded-full bg-sky-500 px-5 py-3.5 text-sm font-semibold text-white shadow-soft transition hover:bg-sky-400 active:scale-[0.98] sm:bottom-6"
         aria-label="إنشاء تقرير نهاية اليوم"
       >
-        إنشاء تقرير نهاية اليوم
+        <FileBarChart size={16} />إنشاء تقرير نهاية اليوم
       </button>
 
       <EodReport rows={reportRows} open={showReport} />

@@ -1,5 +1,6 @@
 import { EodSummaryRow } from '@/types/trading'
 import { formatCurrency, getAssetLabel } from '@/lib/trading'
+import { ChartColumnBig } from 'lucide-react'
 
 interface EodReportProps {
   rows: EodSummaryRow[]
@@ -12,7 +13,7 @@ export function EodReport({ rows, open }: EodReportProps) {
   return (
     <section className="glass mt-5 rounded-3xl p-4" aria-live="polite" aria-label="تقرير نهاية اليوم">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">ملخص نهاية اليوم</h2>
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-white"><ChartColumnBig size={18} />ملخص نهاية اليوم</h2>
         <span className="rounded-full bg-primary/20 px-3 py-1 text-xs text-sky-300">محسوب تلقائيًا</span>
       </div>
 
