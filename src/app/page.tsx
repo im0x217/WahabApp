@@ -93,6 +93,17 @@ export default function HomePage() {
     }
   }, [assets, asset])
 
+  useEffect(() => {
+    if (!showAssetCrud) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [showAssetCrud])
+
   const mainVault = vaults.find((vault) => vault.kind === 'Main') ?? vaults[0]
   const clientVaults = vaults.filter((vault) => vault.kind === 'Client')
   const activeVault = vaults.find((vault) => vault.id === activeVaultId) ?? null
@@ -289,12 +300,42 @@ export default function HomePage() {
     closeTrade()
   }
 
+  const removeAssetType = async (id: string) => {
+    const response = await fetch('/api/assets', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string }
+      setAssetTypeError(payload.error ?? 'تعذر حذف نوع العملة الآن.')
+      return
+    }
+
+    const refreshed = await fetch('/api/assets', { cache: 'no-store' })
+    if (!refreshed.ok) return
+    const payload = (await refreshed.json()) as { items?: AssetDefinition[] }
+    if (Array.isArray(payload.items) && payload.items.length > 0) {
+      setAssets(payload.items)
+      setVaults((previous) => syncVaultBalances(previous, payload.items ?? []))
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-7xl px-3 pb-24 pt-4 sm:px-5 sm:pb-8">
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr] xl:gap-6">
         <section>
           <VaultHero vault={mainVault} assets={assets} />
-          <AssetStrip vault={mainVault} assets={assets} />
+          <AssetStrip
+            vault={mainVault}
+            assets={assets}
+            onOpenAssetManager={() => {
+              setEditingAssetId(null)
+              setShowAssetCrud(true)
+              setAssetTypeError('')
+            }}
+          />
 
           <div className="mt-4 grid grid-cols-2 gap-2 sm:max-w-sm">
             <button
@@ -375,88 +416,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mt-6 glass rounded-3xl p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">إدارة أنواع العملات</h2>
-          <p className="text-xs text-fintech-muted">إضافة • تعديل • حذف مع أيقونة</p>
-        </div>
-
-        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {assets.map((entry) => (
-            <article
-              key={entry.id}
-              className={`rounded-2xl bg-gradient-to-br ${entry.color} glass p-4 transition duration-300 hover:scale-[1.01]`}
-            >
-              <p className="text-sm text-fintech-muted">
-                {entry.icon} {entry.label} ({entry.id})
-              </p>
-              <p className="numeric mt-2 text-xl font-semibold text-white">نوع عملة</p>
-
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingAssetId(entry.id)
-                    setShowAssetCrud(true)
-                    setAssetDraft(entry)
-                    setAssetTypeError('')
-                  }}
-                  className="rounded-xl bg-white/10 px-3 py-1.5 text-xs text-fintech-text"
-                >
-                  تعديل
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const response = await fetch('/api/assets', {
-                      method: 'DELETE',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ id: entry.id }),
-                    })
-
-                    if (!response.ok) {
-                      const payload = (await response.json().catch(() => ({}))) as { error?: string }
-                      setAssetTypeError(payload.error ?? 'تعذر حذف نوع العملة الآن.')
-                      return
-                    }
-
-                    const refreshed = await fetch('/api/assets', { cache: 'no-store' })
-                    if (!refreshed.ok) return
-                    const payload = (await refreshed.json()) as { items?: AssetDefinition[] }
-                    if (Array.isArray(payload.items) && payload.items.length > 0) {
-                      setAssets(payload.items)
-                      setVaults((previous) => syncVaultBalances(previous, payload.items ?? []))
-                    }
-                  }}
-                  className="rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs text-rose-300"
-                >
-                  حذف
-                </button>
-              </div>
-            </article>
-          ))}
-
-          <article className="rounded-2xl bg-gradient-to-br from-sky-500/20 to-sky-300/5 glass p-4 transition duration-300 hover:scale-[1.01]">
-            <p className="text-sm text-fintech-muted">Asset Type Manager</p>
-            <p className="numeric mt-2 text-xl font-semibold text-white">+ إدارة العملات</p>
-            <button
-              type="button"
-              onClick={() => {
-                setEditingAssetId(null)
-                setShowAssetCrud(true)
-                setAssetTypeError('')
-              }}
-              className="mt-3 rounded-xl bg-white/10 px-3 py-1.5 text-xs text-fintech-text"
-            >
-              فتح نافذة الإدارة
-            </button>
-          </article>
-        </div>
-      </section>
-
-      {showAssetCrud || editingAssetId ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="glass w-full max-w-2xl rounded-3xl p-4">
+      {showAssetCrud ? (
+        <div className="fixed inset-0 z-50 bg-black/60 p-2 sm:p-4" onClick={resetAssetDraft}>
+          <div
+            className="glass mx-auto mt-2 flex max-h-[92dvh] w-full max-w-3xl flex-col rounded-3xl p-3 sm:mt-6 sm:p-4"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">{editingAssetId ? 'تعديل نوع العملة' : 'إضافة نوع عملة جديد'}</h3>
               <button
@@ -466,6 +431,41 @@ export default function HomePage() {
               >
                 إغلاق
               </button>
+            </div>
+
+            <div className="mb-3 grid gap-2 overflow-y-auto pr-1">
+              {assets.map((entry) => (
+                <article
+                  key={entry.id}
+                  className={`rounded-2xl bg-gradient-to-br ${entry.color} glass p-3 transition duration-300`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm text-fintech-muted">
+                      {entry.icon} {entry.label} ({entry.id})
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAssetId(entry.id)
+                          setAssetDraft(entry)
+                          setAssetTypeError('')
+                        }}
+                        className="rounded-xl bg-white/10 px-3 py-1.5 text-xs text-fintech-text"
+                      >
+                        تعديل
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeAssetType(entry.id)}
+                        className="rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs text-rose-300"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
 
             <form

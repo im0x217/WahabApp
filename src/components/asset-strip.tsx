@@ -4,9 +4,10 @@ import { formatCurrency, getAssetLabel } from '@/lib/trading'
 interface AssetStripProps {
   vault: Vault
   assets: AssetDefinition[]
+  onOpenAssetManager: () => void
 }
 
-export function AssetStrip({ vault, assets }: AssetStripProps) {
+export function AssetStrip({ vault, assets, onOpenAssetManager }: AssetStripProps) {
   return (
     <section aria-label="أصول الخزنة الرئيسية" className="mt-4">
       <div className="grid grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto pb-1 sm:grid-flow-row sm:auto-cols-fr sm:grid-cols-2 lg:grid-cols-4">
@@ -19,6 +20,18 @@ export function AssetStrip({ vault, assets }: AssetStripProps) {
             <p className="numeric mt-2 text-xl font-semibold text-white">{formatCurrency(vault.balances[asset.id] ?? 0)}</p>
           </article>
         ))}
+
+        <article className="rounded-2xl bg-gradient-to-br from-sky-500/20 to-sky-300/5 glass p-4 transition duration-300 hover:scale-[1.01]">
+          <p className="text-sm text-fintech-muted">Asset Type Manager</p>
+          <p className="numeric mt-2 text-xl font-semibold text-white">+ إدارة العملات</p>
+          <button
+            type="button"
+            onClick={onOpenAssetManager}
+            className="mt-3 rounded-xl bg-white/10 px-3 py-1.5 text-xs text-fintech-text"
+          >
+            فتح نافذة الإدارة
+          </button>
+        </article>
       </div>
     </section>
   )
