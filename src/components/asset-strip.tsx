@@ -14,22 +14,19 @@ export function AssetStrip({ vault, assets, onOpenAssetManager }: AssetStripProp
         {assets.map((asset) => (
           <article
             key={asset.id}
-            className={`rounded-2xl bg-gradient-to-br ${asset.color} glass flex min-h-[128px] flex-col justify-between p-4 transition duration-300 hover:scale-[1.01]`}
+            className={`rounded-2xl bg-gradient-to-br ${asset.color} glass flex min-h-[124px] flex-col justify-between p-4 transition duration-300 hover:scale-[1.01]`}
           >
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-xs text-fintech-muted">الرصيد الحالي</p>
-              <p className="text-xs text-fintech-muted">{asset.icon} {getAssetLabel(asset.id, assets)}</p>
-            </div>
-            <p className="numeric mt-2 text-3xl font-semibold leading-none tracking-tight text-white sm:text-4xl">{formatCurrency(vault.balances[asset.id] ?? 0)}</p>
+            <p className="text-sm text-fintech-muted">{asset.icon} {getAssetLabel(asset.id, assets)}</p>
+            <p className="numeric mt-2 text-xl font-semibold text-white">{formatCurrency(vault.balances[asset.id] ?? 0)}</p>
           </article>
         ))}
 
-        <article className="rounded-2xl bg-gradient-to-br from-sky-500/20 to-sky-300/5 glass flex min-h-[128px] flex-col justify-between p-4 transition duration-300 hover:scale-[1.01]">
+        <article className="rounded-2xl bg-gradient-to-br from-sky-500/20 to-sky-300/5 glass flex min-h-[124px] flex-col justify-between p-4 transition duration-300 hover:scale-[1.01]">
           <div>
             <p className="text-sm text-fintech-muted">Asset Type Manager</p>
             <p className="mt-1 text-xs text-fintech-muted">إضافة • تعديل • حذف</p>
           </div>
-          <p className="numeric mt-2 text-2xl font-semibold text-white">+ إدارة العملات</p>
+          <p className="numeric mt-3 text-xl font-semibold text-white">+ إدارة العملات</p>
           <button
             type="button"
             onClick={onOpenAssetManager}
