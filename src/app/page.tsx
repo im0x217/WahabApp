@@ -28,6 +28,7 @@ export default function HomePage() {
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null)
   const [showAssetCrud, setShowAssetCrud] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [isBootstrapped, setIsBootstrapped] = useState(false)
   const [assetTypeError, setAssetTypeError] = useState('')
   const [draggingAssetId, setDraggingAssetId] = useState<string | null>(null)
   const [dragOverAssetId, setDragOverAssetId] = useState<string | null>(null)
@@ -84,7 +85,13 @@ export default function HomePage() {
         if (Array.isArray(tradesPayload.items)) {
           setLedger(tradesPayload.items)
         }
-      } catch {}
+      } catch {
+        if (!mounted) return
+      } finally {
+        if (mounted) {
+          setIsBootstrapped(true)
+        }
+      }
     }
 
     loadInitialData()
@@ -386,6 +393,16 @@ export default function HomePage() {
     if (!ok) {
       setAssets(current)
     }
+  }
+
+  if (!isBootstrapped) {
+    return (
+      <main className="mx-auto w-full max-w-7xl px-3 pb-24 pt-4 sm:px-5 sm:pb-8">
+        <section className="glass rounded-3xl p-6">
+          <p className="text-sm text-fintech-muted">جاري تحميل البيانات...</p>
+        </section>
+      </main>
+    )
   }
 
   return (
