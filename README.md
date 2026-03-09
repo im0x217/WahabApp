@@ -1,12 +1,12 @@
 # Trading Shop Fintech UI
 
-Mobile-first trading shop dashboard rebuilt with Next.js, React, Tailwind CSS, and PocketBase-ready API routes.
+Mobile-first trading shop dashboard rebuilt with Next.js, React, Tailwind CSS, and persistent Postgres-backed API routes.
 
 ## Stack
 
 - Next.js App Router
 - Tailwind CSS (dark fintech design system)
-- PocketBase SDK
+- Postgres (`postgres`)
 - TypeScript
 
 ## Core UI
@@ -26,15 +26,11 @@ Mobile-first trading shop dashboard rebuilt with Next.js, React, Tailwind CSS, a
 - Blocks direct `LYD` buy/sell in this flow
 - Logs each transaction with timestamp in local state and posts to `/api/trades`
 
-## PocketBase Integration
+## Data Persistence
 
-Set your PocketBase URL in `.env.local`:
-
-```bash
-NEXT_PUBLIC_POCKETBASE_URL=http://127.0.0.1:8090
-```
-
-If not configured, the app uses seeded fallback data and in-memory API behavior.
+- App data is stored in Postgres using `DATABASE_URL`.
+- On first run, the `vaults` table is auto-seeded from `seedVaults`.
+- Every submitted trade writes to `transactions` and current balances are saved to `vaults`.
 
 ## Development
 
@@ -47,7 +43,24 @@ Open: `http://localhost:3000`
 
 ## Production Build
 
+Create your environment file from `.env.example` and set your managed Postgres URL:
+
+```bash
+DATABASE_URL=postgresql://postgres:password@db.example.supabase.co:5432/postgres?sslmode=require
+NODE_ENV=production
+```
+
 ```bash
 npm run build
 npm run start
 ```
+
+## Netlify Deployment
+
+1. Push this repo to GitHub.
+2. In Netlify, create a new site from the repo.
+3. Set environment variables in Netlify site settings:
+	- `DATABASE_URL`
+	- `NODE_ENV=production`
+4. Deploy. Netlify reads `netlify.toml` and builds with Next.js plugin.
+5. Verify by creating trades and refreshing; data should persist.

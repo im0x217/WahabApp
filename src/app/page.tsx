@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { AssetStrip } from '@/components/asset-strip'
 import { BottomNav } from '@/components/bottom-nav'
 import { ClientVaultCard } from '@/components/client-vault-card'
@@ -22,6 +22,34 @@ export default function HomePage() {
   const [description, setDescription] = useState('')
   const [asset, setAsset] = useState<AssetType>('Dollars')
   const [formError, setFormError] = useState('')
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadInitialData = async () => {
+      try {
+        const [vaultsResponse, tradesResponse] = await Promise.all([fetch('/api/vaults'), fetch('/api/trades')])
+        const vaultsPayload = (await vaultsResponse.json()) as { items?: Vault[] }
+        const tradesPayload = (await tradesResponse.json()) as { items?: Transaction[] }
+
+        if (!mounted) return
+
+        if (Array.isArray(vaultsPayload.items) && vaultsPayload.items.length > 0) {
+          setVaults(vaultsPayload.items)
+        }
+
+        if (Array.isArray(tradesPayload.items)) {
+          setLedger(tradesPayload.items)
+        }
+      } catch {}
+    }
+
+    loadInitialData()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const mainVault = vaults.find((vault) => vault.kind === 'Main') ?? vaults[0]
   const clientVaults = vaults.filter((vault) => vault.kind === 'Client')
@@ -139,19 +167,19 @@ export default function HomePage() {
 
     setFormError('')
 
-    setVaults((previous) =>
-      previous.map((vault) => {
-        const shouldApplyToTarget = vault.id === activeVaultId
-        const shouldApplyToMain = Boolean(isClientTransaction && mainVaultId && vault.id === mainVaultId)
+    const nextVaults = vaults.map((vault) => {
+      const shouldApplyToTarget = vault.id === activeVaultId
+      const shouldApplyToMain = Boolean(isClientTransaction && mainVaultId && vault.id === mainVaultId)
 
-        if (!shouldApplyToTarget && !shouldApplyToMain) return vault
+      if (!shouldApplyToTarget && !shouldApplyToMain) return vault
 
-        return {
-          ...vault,
-          balances: computeNextBalances(vault),
-        }
-      }),
-    )
+      return {
+        ...vault,
+        balances: computeNextBalances(vault),
+      }
+    })
+
+    setVaults(nextVaults)
 
     const entry: Transaction = {
       id: crypto.randomUUID(),
@@ -166,19 +194,27 @@ export default function HomePage() {
 
     setLedger((previous) => [entry, ...previous])
 
-    fetch('/api/trades', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        vaultId: entry.vaultId,
-        type: entry.type,
-        asset: entry.asset,
-        amount: entry.amount,
-        rate: entry.rate,
-        description: entry.description,
-        timestamp: entry.timestamp,
+    await Promise.allSettled([
+      fetch('/api/trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: entry.id,
+          vaultId: entry.vaultId,
+          type: entry.type,
+          asset: entry.asset,
+          amount: entry.amount,
+          rate: entry.rate,
+          description: entry.description,
+          timestamp: entry.timestamp,
+        }),
       }),
-    }).catch(() => undefined)
+      fetch('/api/vaults', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: nextVaults }),
+      }),
+    ])
 
     closeTrade()
   }

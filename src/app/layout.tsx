@@ -6,7 +6,7 @@ const cairo = Cairo({ subsets: ['arabic', 'latin'] })
 
 export const metadata: Metadata = {
   title: 'لوحة تداولات المحل',
-  description: 'لوحة تداولات ومخزون موبايل أولًا باستخدام Next.js و Tailwind و PocketBase',
+  description: 'لوحة تداولات ومخزون موبايل أولًا باستخدام Next.js و Tailwind و Postgres',
 }
 
 export const viewport: Viewport = {
