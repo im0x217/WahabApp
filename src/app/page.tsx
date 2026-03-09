@@ -424,11 +424,19 @@ export default function HomePage() {
 
       {isClient && showAssetCrud
         ? createPortal(
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={resetAssetDraft}>
-              <div
-                className="glass flex h-[100dvh] w-screen max-w-none flex-col overflow-hidden rounded-none sm:h-auto sm:max-h-[92dvh] sm:w-full sm:max-w-3xl sm:rounded-3xl"
-                onClick={(event) => event.stopPropagation()}
-              >
+            <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true">
+              <button
+                type="button"
+                aria-label="إغلاق نافذة إدارة العملات"
+                className="absolute inset-0 h-full w-full bg-black/60"
+                onClick={resetAssetDraft}
+              />
+
+              <div className="absolute inset-0 flex items-end sm:items-center sm:justify-center sm:p-4">
+                <div
+                  className="glass flex h-[100svh] w-[100vw] min-w-0 flex-col overflow-hidden rounded-none sm:h-auto sm:max-h-[92svh] sm:w-full sm:max-w-3xl sm:rounded-3xl"
+                  onClick={(event) => event.stopPropagation()}
+                >
                 <div className="flex items-center justify-between border-b border-fintech-border px-3 py-3 sm:px-4">
                   <h3 className="text-lg font-semibold text-white">{editingAssetId ? 'تعديل نوع العملة' : 'إضافة نوع عملة جديد'}</h3>
                   <button
@@ -566,6 +574,7 @@ export default function HomePage() {
                   </form>
                 </div>
               </div>
+            </div>
             </div>,
             document.body,
           )
