@@ -25,6 +25,7 @@ export default function HomePage() {
   const [asset, setAsset] = useState<AssetType>(DEFAULT_ASSET_DEFINITIONS[0]?.id ?? 'Dollars')
   const [formError, setFormError] = useState('')
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null)
+  const [showAssetCrud, setShowAssetCrud] = useState(false)
   const [assetTypeError, setAssetTypeError] = useState('')
   const [assetDraft, setAssetDraft] = useState<AssetDefinition>({
     id: '',
@@ -367,19 +368,23 @@ export default function HomePage() {
           <p className="text-xs text-fintech-muted">إضافة • تعديل • حذف مع أيقونة</p>
         </div>
 
-        <div className="mb-4 space-y-2">
+        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {assets.map((entry) => (
-            <div key={entry.id} className="flex items-center justify-between rounded-2xl bg-fintech-panelSoft px-3 py-2">
-              <div className="text-sm text-white">
-                <span className="mr-1">{entry.icon}</span>
-                <span>{entry.label}</span>
-                <span className="mx-2 text-fintech-muted">({entry.id})</span>
-              </div>
-              <div className="flex gap-2">
+            <article
+              key={entry.id}
+              className={`rounded-2xl bg-gradient-to-br ${entry.color} glass p-4 transition duration-300 hover:scale-[1.01]`}
+            >
+              <p className="text-sm text-fintech-muted">
+                {entry.icon} {entry.label} ({entry.id})
+              </p>
+              <p className="numeric mt-2 text-xl font-semibold text-white">نوع عملة</p>
+
+              <div className="mt-3 flex gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setEditingAssetId(entry.id)
+                    setShowAssetCrud(true)
                     setAssetDraft(entry)
                     setAssetTypeError('')
                   }}
@@ -415,13 +420,29 @@ export default function HomePage() {
                   حذف
                 </button>
               </div>
-            </div>
+            </article>
           ))}
+
+          <article className="rounded-2xl bg-gradient-to-br from-sky-500/20 to-sky-300/5 glass p-4 transition duration-300 hover:scale-[1.01]">
+            <p className="text-sm text-fintech-muted">CRUD Management</p>
+            <p className="numeric mt-2 text-xl font-semibold text-white">إضافة / تعديل / حذف</p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAssetCrud((previous) => !previous)
+                setAssetTypeError('')
+              }}
+              className="mt-3 rounded-xl bg-white/10 px-3 py-1.5 text-xs text-fintech-text"
+            >
+              {showAssetCrud || editingAssetId ? 'إخفاء النموذج' : 'فتح النموذج'}
+            </button>
+          </article>
         </div>
 
-        <form
-          className="grid gap-2 sm:grid-cols-2"
-          onSubmit={async (event) => {
+        {showAssetCrud || editingAssetId ? (
+          <form
+            className="grid gap-2 sm:grid-cols-2"
+            onSubmit={async (event) => {
             event.preventDefault()
             setAssetTypeError('')
 
@@ -447,6 +468,7 @@ export default function HomePage() {
             }
 
             setEditingAssetId(null)
+            setShowAssetCrud(false)
             setAssetDraft({
               id: '',
               label: '',
@@ -454,8 +476,8 @@ export default function HomePage() {
               color: 'from-sky-500/20 to-sky-300/5',
               supportsWeightRate: false,
             })
-          }}
-        >
+            }}
+          >
           <input
             value={assetDraft.id}
             onChange={(event) => setAssetDraft((previous) => ({ ...previous, id: event.target.value }))}
@@ -511,6 +533,7 @@ export default function HomePage() {
                 className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-fintech-text"
                 onClick={() => {
                   setEditingAssetId(null)
+                  setShowAssetCrud(false)
                   setAssetTypeError('')
                   setAssetDraft({
                     id: '',
@@ -525,7 +548,8 @@ export default function HomePage() {
               </button>
             ) : null}
           </div>
-        </form>
+          </form>
+        ) : null}
       </section>
 
       <button
