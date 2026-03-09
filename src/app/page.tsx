@@ -29,6 +29,8 @@ export default function HomePage() {
   const [showAssetCrud, setShowAssetCrud] = useState(false)
   const [isClient, setIsClient] = useState(false)
   const [assetTypeError, setAssetTypeError] = useState('')
+  const [draggingAssetId, setDraggingAssetId] = useState<string | null>(null)
+  const [dragOverAssetId, setDragOverAssetId] = useState<string | null>(null)
   const [assetDraft, setAssetDraft] = useState<AssetDefinition>({
     id: '',
     label: '',
@@ -334,6 +336,58 @@ export default function HomePage() {
     }
   }
 
+  const persistAssetOrder = async (nextAssets: AssetDefinition[]) => {
+    const response = await fetch('/api/assets', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: nextAssets.map((entry) => entry.id) }),
+    })
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string }
+      setAssetTypeError(payload.error ?? 'تعذر حفظ ترتيب العملات الآن.')
+      return false
+    }
+
+    const payload = (await response.json()) as { items?: AssetDefinition[] }
+    if (Array.isArray(payload.items) && payload.items.length > 0) {
+      setAssets(payload.items)
+      setVaults((previous) => syncVaultBalances(previous, payload.items ?? []))
+    }
+
+    return true
+  }
+
+  const handleDragReorder = async (targetId: string) => {
+    if (!draggingAssetId || draggingAssetId === targetId) {
+      setDragOverAssetId(null)
+      setDraggingAssetId(null)
+      return
+    }
+
+    const current = [...assets]
+    const fromIndex = current.findIndex((item) => item.id === draggingAssetId)
+    const toIndex = current.findIndex((item) => item.id === targetId)
+    if (fromIndex < 0 || toIndex < 0) {
+      setDragOverAssetId(null)
+      setDraggingAssetId(null)
+      return
+    }
+
+    const next = [...current]
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+
+    setAssets(next)
+    setDragOverAssetId(null)
+    setDraggingAssetId(null)
+
+    const ok = await persistAssetOrder(next)
+    if (!ok) {
+      setAssets(current)
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-7xl px-3 pb-24 pt-4 sm:px-5 sm:pb-8">
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr] xl:gap-6">
@@ -453,11 +507,33 @@ export default function HomePage() {
                         {assets.map((entry) => (
                           <article
                             key={entry.id}
-                            className={`rounded-2xl bg-gradient-to-br ${entry.color} glass p-3`}
+                            draggable
+                            onDragStart={() => {
+                              setDraggingAssetId(entry.id)
+                              setAssetTypeError('')
+                            }}
+                            onDragOver={(event) => {
+                              event.preventDefault()
+                              setDragOverAssetId(entry.id)
+                            }}
+                            onDragLeave={() => {
+                              if (dragOverAssetId === entry.id) {
+                                setDragOverAssetId(null)
+                              }
+                            }}
+                            onDrop={async (event) => {
+                              event.preventDefault()
+                              await handleDragReorder(entry.id)
+                            }}
+                            onDragEnd={() => {
+                              setDraggingAssetId(null)
+                              setDragOverAssetId(null)
+                            }}
+                            className={`rounded-2xl bg-gradient-to-br ${entry.color} glass cursor-grab p-3 transition duration-200 active:cursor-grabbing ${draggingAssetId === entry.id ? 'scale-[0.98] opacity-70' : ''} ${dragOverAssetId === entry.id && draggingAssetId !== entry.id ? 'ring-2 ring-sky-400/60' : ''}`}
                           >
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                               <p className="text-sm text-fintech-muted">
-                                {entry.icon} {entry.label} ({entry.id}) • السعر العام: {formatCurrency(entry.generalPrice)} {getRateUnitLabel(entry.generalPriceUnit)}
+                                ↕ {entry.icon} {entry.label} ({entry.id}) • السعر العام: {formatCurrency(entry.generalPrice)} {getRateUnitLabel(entry.generalPriceUnit)}
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 <button

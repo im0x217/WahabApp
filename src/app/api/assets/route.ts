@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAssetType, deleteAssetType, getAssetTypes, updateAssetType } from '@/lib/db'
+import { createAssetType, deleteAssetType, getAssetTypes, reorderAssetTypes, updateAssetType } from '@/lib/db'
 import { AssetDefinition } from '@/types/trading'
 
 export const dynamic = 'force-dynamic'
@@ -101,5 +101,23 @@ export async function DELETE(request: NextRequest) {
 
     console.error('Failed to delete asset type', error)
     return NextResponse.json({ error: 'Unable to delete asset type right now.' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const payload = (await request.json()) as { ids?: unknown }
+    const ids = Array.isArray(payload.ids) ? payload.ids.filter((value): value is string => typeof value === 'string' && value.trim().length > 0) : []
+
+    if (ids.length === 0) {
+      return NextResponse.json({ error: 'Invalid reorder payload.' }, { status: 400 })
+    }
+
+    await reorderAssetTypes(ids)
+    const items = await getAssetTypes()
+    return NextResponse.json({ items })
+  } catch (error) {
+    console.error('Failed to reorder asset types', error)
+    return NextResponse.json({ error: 'Unable to reorder asset types right now.' }, { status: 500 })
   }
 }

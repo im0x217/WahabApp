@@ -51,6 +51,7 @@ const initializeDatabase = async () => {
       quantity_unit TEXT NOT NULL DEFAULT 'unit',
       general_price NUMERIC NOT NULL DEFAULT 1,
       general_price_unit TEXT NOT NULL DEFAULT 'unit',
+      sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `
@@ -58,17 +59,29 @@ const initializeDatabase = async () => {
   await sql`ALTER TABLE asset_types ADD COLUMN IF NOT EXISTS quantity_unit TEXT NOT NULL DEFAULT 'unit'`
   await sql`ALTER TABLE asset_types ADD COLUMN IF NOT EXISTS general_price NUMERIC NOT NULL DEFAULT 1`
   await sql`ALTER TABLE asset_types ADD COLUMN IF NOT EXISTS general_price_unit TEXT NOT NULL DEFAULT 'unit'`
+  await sql`ALTER TABLE asset_types ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0`
 
   const [{ asset_count }] = await sql<{ asset_count: string }[]>`SELECT COUNT(*)::text AS asset_count FROM asset_types`
   if (Number(asset_count) === 0) {
     await sql.begin(async (tx: any) => {
-      for (const asset of DEFAULT_ASSET_DEFINITIONS) {
+      for (const [index, asset] of DEFAULT_ASSET_DEFINITIONS.entries()) {
         await tx`
-          INSERT INTO asset_types (id, label, icon, color, supports_weight_rate, quantity_unit, general_price, general_price_unit)
-          VALUES (${asset.id}, ${asset.label}, ${asset.icon}, ${asset.color}, ${asset.supportsWeightRate}, ${asset.quantityUnit}, ${asset.generalPrice}, ${asset.generalPriceUnit})
+          INSERT INTO asset_types (id, label, icon, color, supports_weight_rate, quantity_unit, general_price, general_price_unit, sort_order)
+          VALUES (${asset.id}, ${asset.label}, ${asset.icon}, ${asset.color}, ${asset.supportsWeightRate}, ${asset.quantityUnit}, ${asset.generalPrice}, ${asset.generalPriceUnit}, ${index})
         `
       }
     })
+  } else {
+    await sql`
+      WITH ordered AS (
+        SELECT id, ROW_NUMBER() OVER (ORDER BY sort_order ASC, created_at ASC) - 1 AS next_order
+        FROM asset_types
+      )
+      UPDATE asset_types AS a
+      SET sort_order = ordered.next_order
+      FROM ordered
+      WHERE a.id = ordered.id
+    `
   }
 
   await sql`
@@ -125,7 +138,7 @@ const ensureDbReady = () => {
 
 const getAssetIds = async () => {
   const sql = getSql()
-  return (await sql<Array<{ id: string }>>`SELECT id FROM asset_types ORDER BY created_at ASC`).map((row) => row.id)
+  return (await sql<Array<{ id: string }>>`SELECT id FROM asset_types ORDER BY sort_order ASC, created_at ASC`).map((row) => row.id)
 }
 
 const alignVaultBalancesWithAssets = async () => {
@@ -156,7 +169,7 @@ export const getAssetTypes = async (): Promise<AssetDefinition[]> => {
       general_price: string
       general_price_unit: AssetDefinition['generalPriceUnit']
     }>
-  >`SELECT id, label, icon, color, supports_weight_rate, quantity_unit, general_price::text AS general_price, general_price_unit FROM asset_types ORDER BY created_at ASC`
+  >`SELECT id, label, icon, color, supports_weight_rate, quantity_unit, general_price::text AS general_price, general_price_unit FROM asset_types ORDER BY sort_order ASC, created_at ASC`
 
   return rows.map((row) => ({
     id: row.id,
@@ -173,9 +186,13 @@ export const getAssetTypes = async (): Promise<AssetDefinition[]> => {
 export const createAssetType = async (asset: AssetDefinition) => {
   await ensureDbReady()
   const sql = getSql()
+  const [{ max_order }] = await sql<Array<{ max_order: number | null }>>`
+    SELECT MAX(sort_order) AS max_order FROM asset_types
+  `
+  const nextOrder = Number.isFinite(Number(max_order)) ? Number(max_order) + 1 : 0
   await sql`
-    INSERT INTO asset_types (id, label, icon, color, supports_weight_rate, quantity_unit, general_price, general_price_unit)
-    VALUES (${asset.id}, ${asset.label}, ${asset.icon}, ${asset.color}, ${asset.supportsWeightRate}, ${asset.quantityUnit}, ${asset.generalPrice}, ${asset.generalPriceUnit})
+    INSERT INTO asset_types (id, label, icon, color, supports_weight_rate, quantity_unit, general_price, general_price_unit, sort_order)
+    VALUES (${asset.id}, ${asset.label}, ${asset.icon}, ${asset.color}, ${asset.supportsWeightRate}, ${asset.quantityUnit}, ${asset.generalPrice}, ${asset.generalPriceUnit}, ${nextOrder})
   `
   await alignVaultBalancesWithAssets()
   return asset
@@ -211,6 +228,32 @@ export const deleteAssetType = async (id: string) => {
 
   await sql`DELETE FROM asset_types WHERE id = ${id}`
   await alignVaultBalancesWithAssets()
+
+  await sql`
+    WITH ordered AS (
+      SELECT id, ROW_NUMBER() OVER (ORDER BY sort_order ASC, created_at ASC) - 1 AS next_order
+      FROM asset_types
+    )
+    UPDATE asset_types AS a
+    SET sort_order = ordered.next_order
+    FROM ordered
+    WHERE a.id = ordered.id
+  `
+}
+
+export const reorderAssetTypes = async (orderedIds: string[]) => {
+  await ensureDbReady()
+  const sql = getSql()
+
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return
+  }
+
+  await sql.begin(async (tx: any) => {
+    for (const [index, id] of orderedIds.entries()) {
+      await tx`UPDATE asset_types SET sort_order = ${index} WHERE id = ${id}`
+    }
+  })
 }
 
 export const getVaults = async (): Promise<Vault[]> => {
