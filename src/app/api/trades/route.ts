@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const validTradeTypes: Transaction['type'][] = ['Buy', 'Sell', 'Incoming', 'Outgoing']
-const validAssets: Transaction['asset'][] = ['Dollars', 'LYD', 'Gold', 'Silver']
+const validAssets: Transaction['asset'][] = ['Dollars', 'Euro', 'LYD', 'Gold', 'Silver']
+const validRateUnits: Transaction['rateUnit'][] = ['unit', 'gram', 'ounce', 'kilo']
 
 const isIsoDate = (value: string) => !Number.isNaN(Date.parse(value))
 
@@ -20,6 +21,7 @@ const parseTradePayload = (input: unknown): (Omit<Transaction, 'id'> & { id?: st
   const asset = candidate.asset
   const amount = typeof candidate.amount === 'number' ? candidate.amount : Number.NaN
   const rate = typeof candidate.rate === 'number' ? candidate.rate : Number.NaN
+  const rateUnit = typeof candidate.rateUnit === 'string' ? candidate.rateUnit : 'unit'
   const description = typeof candidate.description === 'string' ? candidate.description : undefined
   const timestamp = typeof candidate.timestamp === 'string' ? candidate.timestamp : ''
 
@@ -28,6 +30,10 @@ const parseTradePayload = (input: unknown): (Omit<Transaction, 'id'> & { id?: st
   }
 
   if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(rate) || rate < 0) {
+    return null
+  }
+
+  if (!validRateUnits.includes(rateUnit as Transaction['rateUnit'])) {
     return null
   }
 
@@ -42,6 +48,7 @@ const parseTradePayload = (input: unknown): (Omit<Transaction, 'id'> & { id?: st
     asset: asset as Transaction['asset'],
     amount,
     rate,
+    rateUnit: rateUnit as Transaction['rateUnit'],
     description,
     timestamp,
   }
@@ -72,6 +79,7 @@ export async function POST(request: NextRequest) {
       asset: payload.asset,
       amount: payload.amount,
       rate: payload.rate,
+      rateUnit: payload.rateUnit,
       description: payload.description,
       timestamp: payload.timestamp,
     })

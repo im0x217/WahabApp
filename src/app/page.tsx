@@ -7,8 +7,8 @@ import { ClientVaultCard } from '@/components/client-vault-card'
 import { EodReport } from '@/components/eod-report'
 import { TradeSheet } from '@/components/trade-sheet'
 import { VaultHero } from '@/components/vault-hero'
-import { buildEodSummary, formatDateTime, formatCurrency, getAssetLabel, getTradeLabel, seedVaults } from '@/lib/trading'
-import { AssetType, TradeType, Transaction, Vault } from '@/types/trading'
+import { buildEodSummary, formatDateTime, formatCurrency, getAssetLabel, getRateUnitLabel, getTradeLabel, seedVaults } from '@/lib/trading'
+import { AssetType, RateUnit, TradeType, Transaction, Vault } from '@/types/trading'
 import { ArrowDownToLine, ArrowUpFromLine, FileBarChart, TrendingDown, TrendingUp } from 'lucide-react'
 
 export default function HomePage() {
@@ -19,6 +19,7 @@ export default function HomePage() {
   const [activeVaultId, setActiveVaultId] = useState<string | null>(null)
   const [amount, setAmount] = useState('')
   const [rate, setRate] = useState('')
+  const [rateUnit, setRateUnit] = useState<RateUnit>('unit')
   const [description, setDescription] = useState('')
   const [asset, setAsset] = useState<AssetType>('Dollars')
   const [formError, setFormError] = useState('')
@@ -70,6 +71,7 @@ export default function HomePage() {
     setActiveVaultId(vaultId)
     setAmount('')
     setRate('')
+    setRateUnit('unit')
     setDescription('')
     setAsset('Dollars')
     setFormError('')
@@ -101,6 +103,7 @@ export default function HomePage() {
 
     const parsedAmount = parseDecimal(amount)
     const parsedRate = tradeMode === 'Buy' || tradeMode === 'Sell' ? parseDecimal(rate) : 0
+    const resolvedRateUnit: RateUnit = asset === 'Gold' || asset === 'Silver' ? rateUnit : 'unit'
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       setFormError('يجب أن تكون الكمية أكبر من صفر.')
@@ -199,6 +202,7 @@ export default function HomePage() {
       asset,
       amount: parsedAmount,
       rate: parsedRate,
+      rateUnit: resolvedRateUnit,
       description: description.trim() || undefined,
       timestamp: new Date().toISOString(),
     }
@@ -216,6 +220,7 @@ export default function HomePage() {
           asset: entry.asset,
           amount: entry.amount,
           rate: entry.rate,
+          rateUnit: entry.rateUnit,
           description: entry.description,
           timestamp: entry.timestamp,
         }),
@@ -293,7 +298,7 @@ export default function HomePage() {
                   <p className="numeric text-sm text-fintech-text">
                     {item.type === 'Incoming' || item.type === 'Outgoing'
                       ? formatCurrency(item.amount)
-                      : `${formatCurrency(item.amount)} × ${formatCurrency(item.rate)}`}
+                      : `${formatCurrency(item.amount)} × ${formatCurrency(item.rate)} ${getRateUnitLabel(item.rateUnit)}`}
                   </p>
                 </li>
               ))
@@ -339,6 +344,7 @@ export default function HomePage() {
         selectedVault={activeVault}
         amount={amount}
         rate={rate}
+        rateUnit={rateUnit}
         description={description}
         asset={asset}
         formError={formError}
@@ -347,6 +353,7 @@ export default function HomePage() {
         onChangeRate={setRate}
         onChangeDescription={setDescription}
         onChangeAsset={setAsset}
+        onChangeRateUnit={setRateUnit}
         onSubmit={submitTrade}
       />
 

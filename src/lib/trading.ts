@@ -1,10 +1,18 @@
-import { ASSETS, EodSummaryRow, Transaction, Vault } from '@/types/trading'
+import { ASSETS, EodSummaryRow, RateUnit, Transaction, Vault } from '@/types/trading'
 
 export const assetLabels: Record<(typeof ASSETS)[number], string> = {
   Dollars: 'دولار',
+  Euro: 'يورو',
   LYD: 'دينار ليبي',
   Gold: 'ذهب',
   Silver: 'فضة',
+}
+
+export const rateUnitLabels: Record<RateUnit, string> = {
+  unit: 'للوحدة',
+  gram: 'للجرام',
+  ounce: 'للأونصة',
+  kilo: 'للكيلو',
 }
 
 export const tradeLabels: Record<Transaction['type'], string> = {
@@ -16,25 +24,26 @@ export const tradeLabels: Record<Transaction['type'], string> = {
 
 export const getAssetLabel = (asset: (typeof ASSETS)[number]) => assetLabels[asset]
 export const getTradeLabel = (type: Transaction['type']) => tradeLabels[type]
+export const getRateUnitLabel = (unit: RateUnit) => rateUnitLabels[unit]
 
 export const seedVaults: Vault[] = [
   {
     id: 'main-vault',
     name: 'الخزنة الرئيسية',
     kind: 'Main',
-    balances: { Dollars: 50000, LYD: 150000, Gold: 80, Silver: 450 },
+    balances: { Dollars: 50000, Euro: 18000, LYD: 150000, Gold: 80, Silver: 450 },
   },
   {
     id: 'client-01',
     name: 'العميل: أحمد علي',
     kind: 'Client',
-    balances: { Dollars: 8000, LYD: 21000, Gold: 8, Silver: 35 },
+    balances: { Dollars: 8000, Euro: 2600, LYD: 21000, Gold: 8, Silver: 35 },
   },
   {
     id: 'client-02',
     name: 'العميلة: سارة محمد',
     kind: 'Client',
-    balances: { Dollars: 6500, LYD: 18000, Gold: 5, Silver: 22 },
+    balances: { Dollars: 6500, Euro: 2200, LYD: 18000, Gold: 5, Silver: 22 },
   },
 ]
 

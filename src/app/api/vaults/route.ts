@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const validKinds: Vault['kind'][] = ['Main', 'Client']
-const requiredAssets: Array<keyof Vault['balances']> = ['Dollars', 'LYD', 'Gold', 'Silver']
+const requiredAssets: Array<keyof Vault['balances']> = ['Dollars', 'Euro', 'LYD', 'Gold', 'Silver']
 
 const isValidVault = (input: unknown): input is Vault => {
   if (!input || typeof input !== 'object') return false

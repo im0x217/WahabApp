@@ -1,5 +1,5 @@
-import { ASSETS, AssetType, TradeType, Vault } from '@/types/trading'
-import { getAssetLabel, getTradeLabel } from '@/lib/trading'
+import { ASSETS, AssetType, RateUnit, TradeType, Vault } from '@/types/trading'
+import { getAssetLabel, getRateUnitLabel, getTradeLabel } from '@/lib/trading'
 
 interface TradeSheetProps {
   isOpen: boolean
@@ -7,6 +7,7 @@ interface TradeSheetProps {
   selectedVault: Vault | null
   amount: string
   rate: string
+  rateUnit: RateUnit
   description: string
   asset: AssetType
   formError: string
@@ -15,6 +16,7 @@ interface TradeSheetProps {
   onChangeRate: (value: string) => void
   onChangeDescription: (value: string) => void
   onChangeAsset: (value: AssetType) => void
+  onChangeRateUnit: (value: RateUnit) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 }
 
@@ -24,6 +26,7 @@ export function TradeSheet({
   selectedVault,
   amount,
   rate,
+  rateUnit,
   description,
   asset,
   formError,
@@ -32,10 +35,12 @@ export function TradeSheet({
   onChangeRate,
   onChangeDescription,
   onChangeAsset,
+  onChangeRateUnit,
   onSubmit,
 }: TradeSheetProps) {
   if (!isOpen || !selectedVault) return null
   const needsRate = mode === 'Buy' || mode === 'Sell'
+  const supportsRateUnit = asset === 'Gold' || asset === 'Silver'
 
   const normalizeDecimalInput = (value: string) =>
     value
@@ -89,21 +94,40 @@ export function TradeSheet({
           </label>
 
           {needsRate ? (
-            <label className="block text-sm text-fintech-muted">
-              السعر
-              <input
-                type="text"
-                inputMode="decimal"
-                dir="ltr"
-                lang="en"
-                pattern="[0-9]*[.]?[0-9]*"
-                value={rate}
-                onChange={(event) => onChangeRate(normalizeDecimalInput(event.target.value))}
-                className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
-                placeholder="0.00"
-                required
-              />
-            </label>
+            <>
+              <label className="block text-sm text-fintech-muted">
+                السعر
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  dir="ltr"
+                  lang="en"
+                  pattern="[0-9]*[.]?[0-9]*"
+                  value={rate}
+                  onChange={(event) => onChangeRate(normalizeDecimalInput(event.target.value))}
+                  className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
+                  placeholder="0.00"
+                  required
+                />
+              </label>
+
+              {supportsRateUnit ? (
+                <label className="block text-sm text-fintech-muted">
+                  تسعير الذهب/الفضة حسب
+                  <select
+                    value={rateUnit}
+                    onChange={(event) => onChangeRateUnit(event.target.value as RateUnit)}
+                    className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
+                  >
+                    {(['gram', 'ounce', 'kilo'] as RateUnit[]).map((unit) => (
+                      <option key={unit} value={unit}>
+                        {getRateUnitLabel(unit)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </>
           ) : null}
 
           {!needsRate ? (

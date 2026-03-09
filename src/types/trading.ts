@@ -1,4 +1,6 @@
-export type AssetType = 'Dollars' | 'LYD' | 'Gold' | 'Silver'
+export type AssetType = 'Dollars' | 'Euro' | 'LYD' | 'Gold' | 'Silver'
+
+export type RateUnit = 'unit' | 'gram' | 'ounce' | 'kilo'
 
 export type TradeType = 'Buy' | 'Sell' | 'Incoming' | 'Outgoing'
 
@@ -16,6 +18,7 @@ export interface Transaction {
   asset: AssetType
   amount: number
   rate: number
+  rateUnit: RateUnit
   description?: string
   timestamp: string
 }
@@ -28,10 +31,11 @@ export interface EodSummaryRow {
   averageSellRate: number
 }
 
-export const ASSETS: AssetType[] = ['Dollars', 'LYD', 'Gold', 'Silver']
+export const ASSETS: AssetType[] = ['Dollars', 'Euro', 'LYD', 'Gold', 'Silver']
 
 export const ASSET_COLORS: Record<AssetType, string> = {
   Dollars: 'from-sky-500/20 to-sky-300/5',
+  Euro: 'from-blue-500/20 to-blue-300/5',
   LYD: 'from-violet-500/20 to-violet-300/5',
   Gold: 'from-amber-500/20 to-amber-300/5',
   Silver: 'from-slate-400/20 to-slate-200/5',

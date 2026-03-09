@@ -29,6 +29,14 @@ const getSql = () => {
   return sqlClient
 }
 
+const normalizeBalances = (balances: Partial<Vault['balances']> | null | undefined): Vault['balances'] => ({
+  Dollars: Number(balances?.Dollars ?? 0),
+  Euro: Number(balances?.Euro ?? 0),
+  LYD: Number(balances?.LYD ?? 0),
+  Gold: Number(balances?.Gold ?? 0),
+  Silver: Number(balances?.Silver ?? 0),
+})
+
 const initializeDatabase = async () => {
   const sql = getSql()
   await sql`
@@ -49,10 +57,13 @@ const initializeDatabase = async () => {
       asset TEXT NOT NULL,
       amount NUMERIC NOT NULL CHECK (amount > 0),
       rate NUMERIC NOT NULL CHECK (rate >= 0),
+      rate_unit TEXT NOT NULL DEFAULT 'unit',
       description TEXT,
       timestamp TIMESTAMPTZ NOT NULL
     )
   `
+
+  await sql`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS rate_unit TEXT NOT NULL DEFAULT 'unit'`
 
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_timestamp ON transactions (timestamp DESC)`
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_vault_id ON transactions (vault_id)`
@@ -65,7 +76,7 @@ const initializeDatabase = async () => {
     for (const vault of seedVaults) {
       await tx`
         INSERT INTO vaults (id, name, kind, balances, updated_at)
-        VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${tx.json(vault.balances)}, ${now})
+        VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${tx.json(normalizeBalances(vault.balances))}, ${now})
       `
     }
   })
@@ -91,7 +102,7 @@ export const getVaults = async (): Promise<Vault[]> => {
     id: row.id,
     name: row.name,
     kind: row.kind,
-    balances: row.balances,
+    balances: normalizeBalances(row.balances),
   }))
 }
 
@@ -105,7 +116,7 @@ export const replaceVaults = async (vaults: Vault[]) => {
     for (const vault of vaults) {
       await tx`
         INSERT INTO vaults (id, name, kind, balances, updated_at)
-        VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${tx.json(vault.balances)}, ${now})
+        VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${tx.json(normalizeBalances(vault.balances))}, ${now})
       `
     }
   })
@@ -122,11 +133,12 @@ export const getTransactions = async (): Promise<Transaction[]> => {
       asset: Transaction['asset']
       amount: number
       rate: number
+      rate_unit: Transaction['rateUnit']
       description: string | null
       timestamp: string
     }>
   >`
-    SELECT id, vault_id, type, asset, amount, rate, description, timestamp::text AS timestamp
+    SELECT id, vault_id, type, asset, amount, rate, rate_unit, description, timestamp::text AS timestamp
     FROM transactions
     ORDER BY timestamp DESC
   `
@@ -138,6 +150,7 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     asset: row.asset,
     amount: row.amount,
     rate: row.rate,
+    rateUnit: row.rate_unit,
     description: row.description ?? undefined,
     timestamp: row.timestamp,
   }))
@@ -147,7 +160,7 @@ export const createTransaction = async (transaction: Transaction) => {
   await ensureDbReady()
   const sql = getSql()
   await sql`
-    INSERT INTO transactions (id, vault_id, type, asset, amount, rate, description, timestamp)
+    INSERT INTO transactions (id, vault_id, type, asset, amount, rate, rate_unit, description, timestamp)
     VALUES (
       ${transaction.id},
       ${transaction.vaultId},
@@ -155,6 +168,7 @@ export const createTransaction = async (transaction: Transaction) => {
       ${transaction.asset},
       ${transaction.amount},
       ${transaction.rate},
+      ${transaction.rateUnit},
       ${transaction.description ?? null},
       ${transaction.timestamp}
     )
