@@ -47,7 +47,6 @@ Create your environment file from `.env.example` and set your managed Postgres U
 
 ```bash
 DATABASE_URL=postgresql://postgres:password@db.example.supabase.co:5432/postgres?sslmode=require
-NODE_ENV=production
 ```
 
 ```bash
@@ -61,6 +60,7 @@ npm run start
 2. In Netlify, create a new site from the repo.
 3. Set environment variables in Netlify site settings:
 	- `DATABASE_URL`
-	- `NODE_ENV=production`
-4. Deploy. Netlify reads `netlify.toml` and builds with Next.js plugin.
-5. Verify by creating trades and refreshing; data should persist.
+4. Do not set `NODE_ENV` manually in Netlify; Next.js and Netlify set it correctly during build/runtime.
+5. Deploy. Netlify reads `netlify.toml` and builds with Next.js plugin.
+6. `netlify.toml` sets `NPM_FLAGS=--include=dev` so Tailwind/PostCSS dev dependencies are available during build.
+7. Verify by creating trades and refreshing; data should persist.
