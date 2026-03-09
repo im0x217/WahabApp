@@ -417,12 +417,12 @@ export default function HomePage() {
       </section>
 
       {showAssetCrud ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-2 py-2 sm:px-4 sm:py-4" onClick={resetAssetDraft}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={resetAssetDraft}>
           <div
-            className="glass mx-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col overflow-x-hidden rounded-2xl p-3 sm:mt-6 sm:max-h-[92dvh] sm:rounded-3xl sm:p-4"
+            className="glass flex h-[100dvh] w-full flex-col overflow-hidden rounded-none sm:h-auto sm:max-h-[92dvh] sm:max-w-3xl sm:rounded-3xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-fintech-border px-3 py-3 sm:px-4">
               <h3 className="text-lg font-semibold text-white">{editingAssetId ? 'تعديل نوع العملة' : 'إضافة نوع عملة جديد'}</h3>
               <button
                 type="button"
@@ -433,129 +433,131 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="mb-3 grid gap-2 overflow-x-hidden overflow-y-auto">
-              {assets.map((entry) => (
-                <article
-                  key={entry.id}
-                  className={`rounded-2xl bg-gradient-to-br ${entry.color} glass p-3 transition duration-300`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-fintech-muted">
-                      {entry.icon} {entry.label} ({entry.id})
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingAssetId(entry.id)
-                          setAssetDraft(entry)
-                          setAssetTypeError('')
-                        }}
-                        className="rounded-xl bg-white/10 px-3 py-1.5 text-xs text-fintech-text"
-                      >
-                        تعديل
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeAssetType(entry.id)}
-                        className="rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs text-rose-300"
-                      >
-                        حذف
-                      </button>
+            <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-4">
+              <div className="mb-3 grid gap-2">
+                {assets.map((entry) => (
+                  <article
+                    key={entry.id}
+                    className={`rounded-2xl bg-gradient-to-br ${entry.color} glass p-3 transition duration-300`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm text-fintech-muted">
+                        {entry.icon} {entry.label} ({entry.id})
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingAssetId(entry.id)
+                            setAssetDraft(entry)
+                            setAssetTypeError('')
+                          }}
+                          className="rounded-xl bg-white/10 px-3 py-1.5 text-xs text-fintech-text"
+                        >
+                          تعديل
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeAssetType(entry.id)}
+                          className="rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs text-rose-300"
+                        >
+                          حذف
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <form
-              className="grid gap-2 sm:grid-cols-2"
-              onSubmit={async (event) => {
-                event.preventDefault()
-                setAssetTypeError('')
-
-                const method = editingAssetId ? 'PUT' : 'POST'
-                const response = await fetch('/api/assets', {
-                  method,
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(assetDraft),
-                })
-
-                if (!response.ok) {
-                  const payload = (await response.json().catch(() => ({}))) as { error?: string }
-                  setAssetTypeError(payload.error ?? 'تعذر حفظ نوع العملة الآن.')
-                  return
-                }
-
-                const refreshed = await fetch('/api/assets', { cache: 'no-store' })
-                if (!refreshed.ok) return
-                const payload = (await refreshed.json()) as { items?: AssetDefinition[] }
-                if (Array.isArray(payload.items) && payload.items.length > 0) {
-                  setAssets(payload.items)
-                  setVaults((previous) => syncVaultBalances(previous, payload.items ?? []))
-                }
-
-                resetAssetDraft()
-              }}
-            >
-              <input
-                value={assetDraft.id}
-                onChange={(event) => setAssetDraft((previous) => ({ ...previous, id: event.target.value }))}
-                placeholder="رمز ثابت (USD, GBP...)"
-                className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
-                disabled={Boolean(editingAssetId)}
-                required
-              />
-              <input
-                value={assetDraft.label}
-                onChange={(event) => setAssetDraft((previous) => ({ ...previous, label: event.target.value }))}
-                placeholder="الاسم"
-                className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
-                required
-              />
-              <input
-                value={assetDraft.icon}
-                onChange={(event) => setAssetDraft((previous) => ({ ...previous, icon: event.target.value }))}
-                placeholder="الأيقونة (€, $, 🥇 ...)"
-                className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
-                required
-              />
-              <select
-                value={assetDraft.color}
-                onChange={(event) => setAssetDraft((previous) => ({ ...previous, color: event.target.value }))}
-                className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
-              >
-                <option value="from-sky-500/20 to-sky-300/5">Blue</option>
-                <option value="from-violet-500/20 to-violet-300/5">Violet</option>
-                <option value="from-emerald-500/20 to-emerald-300/5">Emerald</option>
-                <option value="from-amber-500/20 to-amber-300/5">Amber</option>
-                <option value="from-rose-500/20 to-rose-300/5">Rose</option>
-                <option value="from-slate-400/20 to-slate-200/5">Slate</option>
-              </select>
-              <label className="col-span-full flex items-center gap-2 text-sm text-fintech-muted">
-                <input
-                  type="checkbox"
-                  checked={assetDraft.supportsWeightRate}
-                  onChange={(event) => setAssetDraft((previous) => ({ ...previous, supportsWeightRate: event.target.checked }))}
-                />
-                استخدام تسعير بالجرام/الأونصة/الكيلو
-              </label>
-
-              {assetTypeError ? <p className="col-span-full rounded-xl bg-rose-500/15 px-3 py-2 text-sm text-rose-300">{assetTypeError}</p> : null}
-
-              <div className="col-span-full flex gap-2">
-                <button type="submit" className="rounded-2xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white">
-                  {editingAssetId ? 'حفظ التعديل' : 'إضافة نوع جديد'}
-                </button>
-                <button
-                  type="button"
-                  className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-fintech-text"
-                  onClick={resetAssetDraft}
-                >
-                  إلغاء
-                </button>
+                  </article>
+                ))}
               </div>
-            </form>
+
+              <form
+                className="grid gap-2 sm:grid-cols-2"
+                onSubmit={async (event) => {
+                  event.preventDefault()
+                  setAssetTypeError('')
+
+                  const method = editingAssetId ? 'PUT' : 'POST'
+                  const response = await fetch('/api/assets', {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(assetDraft),
+                  })
+
+                  if (!response.ok) {
+                    const payload = (await response.json().catch(() => ({}))) as { error?: string }
+                    setAssetTypeError(payload.error ?? 'تعذر حفظ نوع العملة الآن.')
+                    return
+                  }
+
+                  const refreshed = await fetch('/api/assets', { cache: 'no-store' })
+                  if (!refreshed.ok) return
+                  const payload = (await refreshed.json()) as { items?: AssetDefinition[] }
+                  if (Array.isArray(payload.items) && payload.items.length > 0) {
+                    setAssets(payload.items)
+                    setVaults((previous) => syncVaultBalances(previous, payload.items ?? []))
+                  }
+
+                  resetAssetDraft()
+                }}
+              >
+                <input
+                  value={assetDraft.id}
+                  onChange={(event) => setAssetDraft((previous) => ({ ...previous, id: event.target.value }))}
+                  placeholder="رمز ثابت (USD, GBP...)"
+                  className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
+                  disabled={Boolean(editingAssetId)}
+                  required
+                />
+                <input
+                  value={assetDraft.label}
+                  onChange={(event) => setAssetDraft((previous) => ({ ...previous, label: event.target.value }))}
+                  placeholder="الاسم"
+                  className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
+                  required
+                />
+                <input
+                  value={assetDraft.icon}
+                  onChange={(event) => setAssetDraft((previous) => ({ ...previous, icon: event.target.value }))}
+                  placeholder="الأيقونة (€, $, 🥇 ...)"
+                  className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
+                  required
+                />
+                <select
+                  value={assetDraft.color}
+                  onChange={(event) => setAssetDraft((previous) => ({ ...previous, color: event.target.value }))}
+                  className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
+                >
+                  <option value="from-sky-500/20 to-sky-300/5">Blue</option>
+                  <option value="from-violet-500/20 to-violet-300/5">Violet</option>
+                  <option value="from-emerald-500/20 to-emerald-300/5">Emerald</option>
+                  <option value="from-amber-500/20 to-amber-300/5">Amber</option>
+                  <option value="from-rose-500/20 to-rose-300/5">Rose</option>
+                  <option value="from-slate-400/20 to-slate-200/5">Slate</option>
+                </select>
+                <label className="col-span-full flex items-center gap-2 text-sm text-fintech-muted">
+                  <input
+                    type="checkbox"
+                    checked={assetDraft.supportsWeightRate}
+                    onChange={(event) => setAssetDraft((previous) => ({ ...previous, supportsWeightRate: event.target.checked }))}
+                  />
+                  استخدام تسعير بالجرام/الأونصة/الكيلو
+                </label>
+
+                {assetTypeError ? <p className="col-span-full rounded-xl bg-rose-500/15 px-3 py-2 text-sm text-rose-300">{assetTypeError}</p> : null}
+
+                <div className="col-span-full flex gap-2 pb-1">
+                  <button type="submit" className="rounded-2xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white">
+                    {editingAssetId ? 'حفظ التعديل' : 'إضافة نوع جديد'}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-fintech-text"
+                    onClick={resetAssetDraft}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       ) : null}
