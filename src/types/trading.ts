@@ -16,6 +16,7 @@ export interface Transaction {
   asset: AssetType
   amount: number
   rate: number
+  description?: string
   timestamp: string
 }
 

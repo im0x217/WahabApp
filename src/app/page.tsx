@@ -18,6 +18,7 @@ export default function HomePage() {
   const [activeVaultId, setActiveVaultId] = useState<string | null>(null)
   const [amount, setAmount] = useState('')
   const [rate, setRate] = useState('')
+  const [description, setDescription] = useState('')
   const [asset, setAsset] = useState<AssetType>('Dollars')
   const [formError, setFormError] = useState('')
 
@@ -32,12 +33,14 @@ export default function HomePage() {
     setActiveVaultId(vaultId)
     setAmount('')
     setRate('')
+    setDescription('')
     setAsset('Dollars')
     setFormError('')
   }
 
   const closeTrade = () => {
     setActiveVaultId(null)
+    setDescription('')
     setFormError('')
   }
 
@@ -69,6 +72,11 @@ export default function HomePage() {
 
     if ((tradeMode === 'Buy' || tradeMode === 'Sell') && (!Number.isFinite(parsedRate) || parsedRate <= 0)) {
       setFormError('يجب أن يكون السعر أكبر من صفر.')
+      return
+    }
+
+    if ((tradeMode === 'Incoming' || tradeMode === 'Outgoing') && !description.trim()) {
+      setFormError('يرجى إدخال وصف لعملية الوارد/الصادر.')
       return
     }
 
@@ -151,6 +159,7 @@ export default function HomePage() {
       asset,
       amount: parsedAmount,
       rate: parsedRate,
+      description: description.trim() || undefined,
       timestamp: new Date().toISOString(),
     }
 
@@ -165,6 +174,7 @@ export default function HomePage() {
         asset: entry.asset,
         amount: entry.amount,
         rate: entry.rate,
+        description: entry.description,
         timestamp: entry.timestamp,
       }),
     }).catch(() => undefined)
@@ -223,6 +233,7 @@ export default function HomePage() {
                   <div>
                     <p className="text-sm text-white">{getTradeLabel(item.type)} {getAssetLabel(item.asset)} • {item.vaultId}</p>
                     <p className="text-xs text-fintech-muted">{formatDateTime(item.timestamp)}</p>
+                    {item.description ? <p className="text-xs text-fintech-muted">{item.description}</p> : null}
                   </div>
                   <p className="numeric text-sm text-fintech-text">
                     {item.type === 'Incoming' || item.type === 'Outgoing'
@@ -273,11 +284,13 @@ export default function HomePage() {
         selectedVault={activeVault}
         amount={amount}
         rate={rate}
+        description={description}
         asset={asset}
         formError={formError}
         onClose={closeTrade}
         onChangeAmount={setAmount}
         onChangeRate={setRate}
+        onChangeDescription={setDescription}
         onChangeAsset={setAsset}
         onSubmit={submitTrade}
       />

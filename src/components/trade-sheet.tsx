@@ -7,11 +7,13 @@ interface TradeSheetProps {
   selectedVault: Vault | null
   amount: string
   rate: string
+  description: string
   asset: AssetType
   formError: string
   onClose: () => void
   onChangeAmount: (value: string) => void
   onChangeRate: (value: string) => void
+  onChangeDescription: (value: string) => void
   onChangeAsset: (value: AssetType) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 }
@@ -22,11 +24,13 @@ export function TradeSheet({
   selectedVault,
   amount,
   rate,
+  description,
   asset,
   formError,
   onClose,
   onChangeAmount,
   onChangeRate,
+  onChangeDescription,
   onChangeAsset,
   onSubmit,
 }: TradeSheetProps) {
@@ -97,6 +101,20 @@ export function TradeSheet({
                 onChange={(event) => onChangeRate(normalizeDecimalInput(event.target.value))}
                 className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
                 placeholder="0.00"
+                required
+              />
+            </label>
+          ) : null}
+
+          {!needsRate ? (
+            <label className="block text-sm text-fintech-muted">
+              الوصف
+              <input
+                type="text"
+                value={description}
+                onChange={(event) => onChangeDescription(event.target.value)}
+                className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
+                placeholder="أدخل وصفًا للعملية"
                 required
               />
             </label>
