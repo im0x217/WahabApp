@@ -26,6 +26,36 @@ export const getAssetIcon = (asset: string, assets?: AssetDefinition[]) =>
 export const getTradeLabel = (type: Transaction['type']) => tradeLabels[type]
 export const getRateUnitLabel = (unit: RateUnit) => rateUnitLabels[unit]
 
+const unitWeightFactor: Record<RateUnit, number> = {
+  unit: 1,
+  gram: 1,
+  ounce: 31.1034768,
+  kilo: 1000,
+}
+
+export const convertAmountBetweenUnits = (amount: number, from: RateUnit, to: RateUnit) => {
+  if (!Number.isFinite(amount)) return 0
+  if (from === to) return amount
+
+  const fromFactor = unitWeightFactor[from]
+  const toFactor = unitWeightFactor[to]
+  return (amount * fromFactor) / toFactor
+}
+
+export const getAssetGeneralValue = (amount: number, asset?: AssetDefinition) => {
+  if (!asset || !Number.isFinite(amount)) return 0
+
+  const normalizedAmount = convertAmountBetweenUnits(amount, asset.quantityUnit, asset.generalPriceUnit)
+  return normalizedAmount * asset.generalPrice
+}
+
+export const getVaultGeneralTotal = (vault: Vault, assets: AssetDefinition[]) => {
+  return Object.entries(vault.balances).reduce((sum, [assetId, amount]) => {
+    const asset = assets.find((entry) => entry.id === assetId)
+    return sum + getAssetGeneralValue(amount, asset)
+  }, 0)
+}
+
 export const seedVaults: Vault[] = [
   {
     id: 'main-vault',

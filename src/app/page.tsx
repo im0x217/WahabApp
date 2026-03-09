@@ -35,6 +35,9 @@ export default function HomePage() {
     icon: '💱',
     color: 'from-sky-500/20 to-sky-300/5',
     supportsWeightRate: false,
+    quantityUnit: 'unit',
+    generalPrice: 1,
+    generalPriceUnit: 'unit',
   })
 
   const syncVaultBalances = (items: Vault[], assetTypes: AssetDefinition[]) => {
@@ -157,6 +160,9 @@ export default function HomePage() {
       icon: '💱',
       color: 'from-sky-500/20 to-sky-300/5',
       supportsWeightRate: false,
+      quantityUnit: 'unit',
+      generalPrice: 1,
+      generalPriceUnit: 'unit',
     })
   }
 
@@ -450,7 +456,9 @@ export default function HomePage() {
                             className={`rounded-2xl bg-gradient-to-br ${entry.color} glass p-3`}
                           >
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <p className="text-sm text-fintech-muted">{entry.icon} {entry.label} ({entry.id})</p>
+                              <p className="text-sm text-fintech-muted">
+                                {entry.icon} {entry.label} ({entry.id}) • السعر العام: {formatCurrency(entry.generalPrice)} {getRateUnitLabel(entry.generalPriceUnit)}
+                              </p>
                               <div className="flex flex-wrap gap-2">
                                 <button
                                   type="button"
@@ -544,10 +552,67 @@ export default function HomePage() {
                           <input
                             type="checkbox"
                             checked={assetDraft.supportsWeightRate}
-                            onChange={(event) => setAssetDraft((previous) => ({ ...previous, supportsWeightRate: event.target.checked }))}
+                            onChange={(event) =>
+                              setAssetDraft((previous) => ({
+                                ...previous,
+                                supportsWeightRate: event.target.checked,
+                                quantityUnit: event.target.checked ? previous.quantityUnit : 'unit',
+                                generalPriceUnit: event.target.checked ? previous.generalPriceUnit : 'unit',
+                              }))
+                            }
                           />
                           استخدام تسعير بالجرام/الأونصة/الكيلو
                         </label>
+
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.0001"
+                          value={assetDraft.generalPrice}
+                          onChange={(event) =>
+                            setAssetDraft((previous) => ({
+                              ...previous,
+                              generalPrice: Number.isFinite(Number(event.target.value)) ? Number(event.target.value) : 0,
+                            }))
+                          }
+                          placeholder="السعر العام"
+                          className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
+                          required
+                        />
+
+                        <select
+                          value={assetDraft.generalPriceUnit}
+                          onChange={(event) =>
+                            setAssetDraft((previous) => ({
+                              ...previous,
+                              generalPriceUnit: event.target.value as RateUnit,
+                            }))
+                          }
+                          className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
+                          disabled={!assetDraft.supportsWeightRate}
+                        >
+                          <option value="unit">وحدة السعر: وحدة</option>
+                          <option value="gram">وحدة السعر: جرام</option>
+                          <option value="ounce">وحدة السعر: أونصة</option>
+                          <option value="kilo">وحدة السعر: كيلو</option>
+                        </select>
+
+                        <select
+                          value={assetDraft.quantityUnit}
+                          onChange={(event) =>
+                            setAssetDraft((previous) => ({
+                              ...previous,
+                              quantityUnit: event.target.value as RateUnit,
+                            }))
+                          }
+                          className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
+                          disabled={!assetDraft.supportsWeightRate}
+                        >
+                          <option value="unit">وحدة الرصيد: وحدة</option>
+                          <option value="gram">وحدة الرصيد: جرام</option>
+                          <option value="ounce">وحدة الرصيد: أونصة</option>
+                          <option value="kilo">وحدة الرصيد: كيلو</option>
+                        </select>
 
                         {assetTypeError ? <p className="col-span-full rounded-xl bg-rose-500/15 px-3 py-2 text-sm text-rose-300">{assetTypeError}</p> : null}
 

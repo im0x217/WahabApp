@@ -1,5 +1,5 @@
 import { AssetDefinition, Vault } from '@/types/trading'
-import { formatCurrency, getAssetLabel, getAssetIcon } from '@/lib/trading'
+import { formatCurrency, getAssetLabel, getAssetIcon, getVaultGeneralTotal } from '@/lib/trading'
 import { Landmark, Wallet } from 'lucide-react'
 
 interface VaultHeroProps {
@@ -8,7 +8,7 @@ interface VaultHeroProps {
 }
 
 export function VaultHero({ vault, assets }: VaultHeroProps) {
-  const totalHoldings = Object.values(vault.balances).reduce((sum, value) => sum + value, 0)
+  const totalHoldings = getVaultGeneralTotal(vault, assets)
 
   return (
     <section
@@ -28,7 +28,7 @@ export function VaultHero({ vault, assets }: VaultHeroProps) {
         ))}
       </div>
       <div className="mt-4 rounded-2xl bg-white/5 p-3 ring-1 ring-white/10">
-        <p className="flex items-center gap-2 text-xs tracking-wide text-fintech-muted"><Wallet size={14} />إجمالي الأرصدة</p>
+        <p className="flex items-center gap-2 text-xs tracking-wide text-fintech-muted"><Wallet size={14} />إجمالي القيمة العامة</p>
         <p className="numeric mt-1 text-2xl font-bold text-white">{formatCurrency(totalHoldings)}</p>
       </div>
     </section>

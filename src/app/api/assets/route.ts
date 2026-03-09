@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const isValidColor = (value: string) => value.includes('from-') && value.includes('to-')
+const validUnits: AssetDefinition['generalPriceUnit'][] = ['unit', 'gram', 'ounce', 'kilo']
 
 const parseAssetPayload = (input: unknown): AssetDefinition | null => {
   if (!input || typeof input !== 'object') return null
@@ -16,13 +17,30 @@ const parseAssetPayload = (input: unknown): AssetDefinition | null => {
   const icon = typeof candidate.icon === 'string' ? candidate.icon.trim() : ''
   const color = typeof candidate.color === 'string' ? candidate.color.trim() : ''
   const supportsWeightRate = Boolean(candidate.supportsWeightRate)
+  const quantityUnit = typeof candidate.quantityUnit === 'string' ? candidate.quantityUnit : 'unit'
+  const generalPriceUnit = typeof candidate.generalPriceUnit === 'string' ? candidate.generalPriceUnit : 'unit'
+  const generalPrice = typeof candidate.generalPrice === 'number' ? candidate.generalPrice : Number.NaN
 
   if (!id || !/^[A-Za-z0-9_-]{2,24}$/.test(id)) return null
   if (!label || label.length > 40) return null
   if (!icon || icon.length > 8) return null
   if (!color || !isValidColor(color)) return null
+  if (!validUnits.includes(quantityUnit as AssetDefinition['quantityUnit'])) return null
+  if (!validUnits.includes(generalPriceUnit as AssetDefinition['generalPriceUnit'])) return null
+  if (!Number.isFinite(generalPrice) || generalPrice < 0) return null
 
-  return { id, label, icon, color, supportsWeightRate }
+  if (!supportsWeightRate && (quantityUnit !== 'unit' || generalPriceUnit !== 'unit')) return null
+
+  return {
+    id,
+    label,
+    icon,
+    color,
+    supportsWeightRate,
+    quantityUnit: quantityUnit as AssetDefinition['quantityUnit'],
+    generalPrice,
+    generalPriceUnit: generalPriceUnit as AssetDefinition['generalPriceUnit'],
+  }
 }
 
 export async function GET() {

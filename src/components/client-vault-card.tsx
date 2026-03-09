@@ -1,4 +1,4 @@
-import { formatCurrency, getAssetLabel } from '@/lib/trading'
+import { formatCurrency, getAssetGeneralValue, getAssetLabel } from '@/lib/trading'
 import { AssetDefinition, Vault } from '@/types/trading'
 import { ArrowDownToLine, ArrowUpFromLine, TrendingDown, TrendingUp, UserRound } from 'lucide-react'
 
@@ -12,7 +12,7 @@ interface ClientVaultCardProps {
 }
 
 export function ClientVaultCard({ vault, assets, onBuy, onSell, onIncoming, onOutgoing }: ClientVaultCardProps) {
-  const total = Object.values(vault.balances).reduce((sum, value) => sum + value, 0)
+  const total = assets.reduce((sum, asset) => sum + getAssetGeneralValue(vault.balances[asset.id] ?? 0, asset), 0)
 
   return (
     <article className="glass rounded-3xl p-4 transition duration-300 hover:translate-y-[-2px]" aria-label={`خزنة العميل ${vault.name}`}>
@@ -24,7 +24,8 @@ export function ClientVaultCard({ vault, assets, onBuy, onSell, onIncoming, onOu
       <div className="mt-4 space-y-2">
         {assets.map((asset) => {
           const value = vault.balances[asset.id] ?? 0
-          const pct = total > 0 ? (value / total) * 100 : 0
+          const valuedAmount = getAssetGeneralValue(value, asset)
+          const pct = total > 0 ? (valuedAmount / total) * 100 : 0
           return (
             <div key={asset.id} className="space-y-1">
               <div className="flex items-center justify-between text-xs text-fintech-muted">

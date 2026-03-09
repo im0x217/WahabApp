@@ -48,17 +48,24 @@ const initializeDatabase = async () => {
       icon TEXT NOT NULL,
       color TEXT NOT NULL,
       supports_weight_rate BOOLEAN NOT NULL DEFAULT FALSE,
+      quantity_unit TEXT NOT NULL DEFAULT 'unit',
+      general_price NUMERIC NOT NULL DEFAULT 1,
+      general_price_unit TEXT NOT NULL DEFAULT 'unit',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `
+
+  await sql`ALTER TABLE asset_types ADD COLUMN IF NOT EXISTS quantity_unit TEXT NOT NULL DEFAULT 'unit'`
+  await sql`ALTER TABLE asset_types ADD COLUMN IF NOT EXISTS general_price NUMERIC NOT NULL DEFAULT 1`
+  await sql`ALTER TABLE asset_types ADD COLUMN IF NOT EXISTS general_price_unit TEXT NOT NULL DEFAULT 'unit'`
 
   const [{ asset_count }] = await sql<{ asset_count: string }[]>`SELECT COUNT(*)::text AS asset_count FROM asset_types`
   if (Number(asset_count) === 0) {
     await sql.begin(async (tx: any) => {
       for (const asset of DEFAULT_ASSET_DEFINITIONS) {
         await tx`
-          INSERT INTO asset_types (id, label, icon, color, supports_weight_rate)
-          VALUES (${asset.id}, ${asset.label}, ${asset.icon}, ${asset.color}, ${asset.supportsWeightRate})
+          INSERT INTO asset_types (id, label, icon, color, supports_weight_rate, quantity_unit, general_price, general_price_unit)
+          VALUES (${asset.id}, ${asset.label}, ${asset.icon}, ${asset.color}, ${asset.supportsWeightRate}, ${asset.quantityUnit}, ${asset.generalPrice}, ${asset.generalPriceUnit})
         `
       }
     })
@@ -139,8 +146,17 @@ export const getAssetTypes = async (): Promise<AssetDefinition[]> => {
   await ensureDbReady()
   const sql = getSql()
   const rows = await sql<
-    Array<{ id: string; label: string; icon: string; color: string; supports_weight_rate: boolean }>
-  >`SELECT id, label, icon, color, supports_weight_rate FROM asset_types ORDER BY created_at ASC`
+    Array<{
+      id: string
+      label: string
+      icon: string
+      color: string
+      supports_weight_rate: boolean
+      quantity_unit: AssetDefinition['quantityUnit']
+      general_price: string
+      general_price_unit: AssetDefinition['generalPriceUnit']
+    }>
+  >`SELECT id, label, icon, color, supports_weight_rate, quantity_unit, general_price::text AS general_price, general_price_unit FROM asset_types ORDER BY created_at ASC`
 
   return rows.map((row) => ({
     id: row.id,
@@ -148,6 +164,9 @@ export const getAssetTypes = async (): Promise<AssetDefinition[]> => {
     icon: row.icon,
     color: row.color,
     supportsWeightRate: row.supports_weight_rate,
+    quantityUnit: row.quantity_unit,
+    generalPrice: Number(row.general_price),
+    generalPriceUnit: row.general_price_unit,
   }))
 }
 
@@ -155,8 +174,8 @@ export const createAssetType = async (asset: AssetDefinition) => {
   await ensureDbReady()
   const sql = getSql()
   await sql`
-    INSERT INTO asset_types (id, label, icon, color, supports_weight_rate)
-    VALUES (${asset.id}, ${asset.label}, ${asset.icon}, ${asset.color}, ${asset.supportsWeightRate})
+    INSERT INTO asset_types (id, label, icon, color, supports_weight_rate, quantity_unit, general_price, general_price_unit)
+    VALUES (${asset.id}, ${asset.label}, ${asset.icon}, ${asset.color}, ${asset.supportsWeightRate}, ${asset.quantityUnit}, ${asset.generalPrice}, ${asset.generalPriceUnit})
   `
   await alignVaultBalancesWithAssets()
   return asset
@@ -167,7 +186,13 @@ export const updateAssetType = async (asset: AssetDefinition) => {
   const sql = getSql()
   await sql`
     UPDATE asset_types
-    SET label = ${asset.label}, icon = ${asset.icon}, color = ${asset.color}, supports_weight_rate = ${asset.supportsWeightRate}
+    SET label = ${asset.label},
+        icon = ${asset.icon},
+        color = ${asset.color},
+        supports_weight_rate = ${asset.supportsWeightRate},
+        quantity_unit = ${asset.quantityUnit},
+        general_price = ${asset.generalPrice},
+        general_price_unit = ${asset.generalPriceUnit}
     WHERE id = ${asset.id}
   `
   return asset
