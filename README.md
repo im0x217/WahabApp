@@ -61,6 +61,11 @@ npm run start
 3. Set environment variables in Netlify site settings:
 	- `DATABASE_URL`
 4. Do not set `NODE_ENV` manually in Netlify; Next.js and Netlify set it correctly during build/runtime.
-5. Deploy. Netlify reads `netlify.toml` and builds with Next.js plugin.
-6. `netlify.toml` sets `NPM_FLAGS=--include=dev` so Tailwind/PostCSS dev dependencies are available during build.
-7. Verify by creating trades and refreshing; data should persist.
+5. In Netlify Build settings, leave **Publish directory** empty. Do not set it to the repo root.
+6. Deploy. Netlify reads `netlify.toml` and builds with Next.js plugin.
+7. `netlify.toml` sets `NPM_FLAGS=--include=dev` so Tailwind/PostCSS dev dependencies are available during build.
+8. Verify by creating trades and refreshing; data should persist.
+
+### Netlify Troubleshooting
+
+- If deploy fails with `@netlify/plugin-nextjs` and message: `Your publish directory cannot be the same as the base directory of your site`, clear the Netlify UI **Publish directory** field and redeploy.
