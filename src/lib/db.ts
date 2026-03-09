@@ -277,3 +277,29 @@ export const createTransaction = async (transaction: Transaction) => {
 
   return transaction
 }
+
+export const resetAllSources = async () => {
+  await ensureDbReady()
+  const sql = getSql()
+
+  const assetIds = await getAssetIds()
+  const vaultRows = await sql<Array<{ id: string; balances: Record<string, number> }>>`
+    SELECT id, balances
+    FROM vaults
+  `
+
+  const zeroBalances = (balances: Record<string, number>) =>
+    Object.fromEntries(assetIds.map((assetId) => [assetId, Number(balances?.[assetId] ?? 0) * 0]))
+
+  await sql.begin(async (tx: any) => {
+    await tx`DELETE FROM transactions`
+
+    for (const vault of vaultRows) {
+      await tx`
+        UPDATE vaults
+        SET balances = ${tx.json(zeroBalances(vault.balances))}, updated_at = NOW()
+        WHERE id = ${vault.id}
+      `
+    }
+  })
+}
