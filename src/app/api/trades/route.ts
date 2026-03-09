@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createTransaction, getTransactions } from '@/lib/db'
+import { createTransaction, getAssetTypes, getTransactions } from '@/lib/db'
 import { Transaction } from '@/types/trading'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const validTradeTypes: Transaction['type'][] = ['Buy', 'Sell', 'Incoming', 'Outgoing']
-const validAssets: Transaction['asset'][] = ['Dollars', 'Euro', 'LYD', 'Gold', 'Silver']
 const validRateUnits: Transaction['rateUnit'][] = ['unit', 'gram', 'ounce', 'kilo']
 
 const isIsoDate = (value: string) => !Number.isNaN(Date.parse(value))
 
-const parseTradePayload = (input: unknown): (Omit<Transaction, 'id'> & { id?: string }) | null => {
+const parseTradePayload = (
+  input: unknown,
+  validAssets: string[],
+): (Omit<Transaction, 'id'> & { id?: string }) | null => {
   if (!input || typeof input !== 'object') return null
   const candidate = input as Record<string, unknown>
 
@@ -25,7 +27,7 @@ const parseTradePayload = (input: unknown): (Omit<Transaction, 'id'> & { id?: st
   const description = typeof candidate.description === 'string' ? candidate.description : undefined
   const timestamp = typeof candidate.timestamp === 'string' ? candidate.timestamp : ''
 
-  if (!vaultId || !validTradeTypes.includes(type as Transaction['type']) || !validAssets.includes(asset as Transaction['asset'])) {
+  if (!vaultId || !validTradeTypes.includes(type as Transaction['type']) || !validAssets.includes(asset as string)) {
     return null
   }
 
@@ -65,7 +67,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const payload = parseTradePayload(await request.json())
+  const assets = await getAssetTypes()
+  const payload = parseTradePayload(await request.json(), assets.map((asset) => asset.id))
 
   if (!payload) {
     return NextResponse.json({ error: 'Invalid trade payload.' }, { status: 400 })

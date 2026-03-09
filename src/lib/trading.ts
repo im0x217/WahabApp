@@ -1,12 +1,4 @@
-import { ASSETS, EodSummaryRow, RateUnit, Transaction, Vault } from '@/types/trading'
-
-export const assetLabels: Record<(typeof ASSETS)[number], string> = {
-  Dollars: 'دولار',
-  Euro: 'يورو',
-  LYD: 'دينار ليبي',
-  Gold: 'ذهب',
-  Silver: 'فضة',
-}
+import { AssetDefinition, DEFAULT_ASSET_DEFINITIONS, EodSummaryRow, RateUnit, Transaction, Vault } from '@/types/trading'
 
 export const rateUnitLabels: Record<RateUnit, string> = {
   unit: 'للوحدة',
@@ -22,7 +14,15 @@ export const tradeLabels: Record<Transaction['type'], string> = {
   Outgoing: 'صادر',
 }
 
-export const getAssetLabel = (asset: (typeof ASSETS)[number]) => assetLabels[asset]
+const defaultAssetLabelMap = Object.fromEntries(DEFAULT_ASSET_DEFINITIONS.map((asset) => [asset.id, asset.label]))
+const defaultAssetIconMap = Object.fromEntries(DEFAULT_ASSET_DEFINITIONS.map((asset) => [asset.id, asset.icon]))
+
+export const getAssetLabel = (asset: string, assets?: AssetDefinition[]) =>
+  assets?.find((entry) => entry.id === asset)?.label ?? defaultAssetLabelMap[asset] ?? asset
+
+export const getAssetIcon = (asset: string, assets?: AssetDefinition[]) =>
+  assets?.find((entry) => entry.id === asset)?.icon ?? defaultAssetIconMap[asset] ?? '💱'
+
 export const getTradeLabel = (type: Transaction['type']) => tradeLabels[type]
 export const getRateUnitLabel = (unit: RateUnit) => rateUnitLabels[unit]
 
@@ -47,12 +47,16 @@ export const seedVaults: Vault[] = [
   },
 ]
 
-export const buildEodSummary = (ledger: Transaction[]): EodSummaryRow[] => {
+export const buildEodSummary = (ledger: Transaction[], assets: AssetDefinition[]): EodSummaryRow[] => {
+  const assetIds = assets.map((asset) => asset.id)
   const map = Object.fromEntries(
-    ASSETS.map((asset) => [asset, { buyAmount: 0, sellAmount: 0, buySum: 0, sellSum: 0 }]),
-  ) as Record<(typeof ASSETS)[number], { buyAmount: number; sellAmount: number; buySum: number; sellSum: number }>
+    assetIds.map((asset) => [asset, { buyAmount: 0, sellAmount: 0, buySum: 0, sellSum: 0 }]),
+  ) as Record<string, { buyAmount: number; sellAmount: number; buySum: number; sellSum: number }>
 
   for (const trade of ledger) {
+    if (!map[trade.asset]) {
+      map[trade.asset] = { buyAmount: 0, sellAmount: 0, buySum: 0, sellSum: 0 }
+    }
     const row = map[trade.asset]
     if (trade.type === 'Buy') {
       row.buyAmount += trade.amount
@@ -63,7 +67,7 @@ export const buildEodSummary = (ledger: Transaction[]): EodSummaryRow[] => {
     }
   }
 
-  return ASSETS.map((asset) => {
+  return Object.keys(map).map((asset) => {
     const row = map[asset]
     return {
       asset,

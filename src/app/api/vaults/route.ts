@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getVaults, replaceVaults } from '@/lib/db'
+import { getAssetTypes, getVaults, replaceVaults } from '@/lib/db'
 import { Vault } from '@/types/trading'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const validKinds: Vault['kind'][] = ['Main', 'Client']
-const requiredAssets: Array<keyof Vault['balances']> = ['Dollars', 'Euro', 'LYD', 'Gold', 'Silver']
-
-const isValidVault = (input: unknown): input is Vault => {
+const isValidVault = (input: unknown, requiredAssets: string[]): input is Vault => {
   if (!input || typeof input !== 'object') return false
   const vault = input as Record<string, unknown>
 
@@ -38,8 +36,9 @@ export async function POST(request: NextRequest) {
   try {
     const payload = (await request.json()) as { items?: unknown[] }
     const items = payload.items
+    const requiredAssets = (await getAssetTypes()).map((asset) => asset.id)
 
-    if (!Array.isArray(items) || items.length === 0 || !items.every(isValidVault)) {
+    if (!Array.isArray(items) || items.length === 0 || !items.every((item) => isValidVault(item, requiredAssets))) {
       return NextResponse.json({ error: 'Invalid vault payload.' }, { status: 400 })
     }
 

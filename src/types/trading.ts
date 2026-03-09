@@ -1,6 +1,14 @@
-export type AssetType = 'Dollars' | 'Euro' | 'LYD' | 'Gold' | 'Silver'
+export type AssetType = string
 
 export type RateUnit = 'unit' | 'gram' | 'ounce' | 'kilo'
+
+export interface AssetDefinition {
+  id: string
+  label: string
+  icon: string
+  color: string
+  supportsWeightRate: boolean
+}
 
 export type TradeType = 'Buy' | 'Sell' | 'Incoming' | 'Outgoing'
 
@@ -8,7 +16,7 @@ export interface Vault {
   id: string
   name: string
   kind: 'Main' | 'Client'
-  balances: Record<AssetType, number>
+  balances: Record<string, number>
 }
 
 export interface Transaction {
@@ -24,19 +32,17 @@ export interface Transaction {
 }
 
 export interface EodSummaryRow {
-  asset: AssetType
+  asset: string
   totalBought: number
   totalSold: number
   averageBuyRate: number
   averageSellRate: number
 }
 
-export const ASSETS: AssetType[] = ['Dollars', 'Euro', 'LYD', 'Gold', 'Silver']
-
-export const ASSET_COLORS: Record<AssetType, string> = {
-  Dollars: 'from-sky-500/20 to-sky-300/5',
-  Euro: 'from-blue-500/20 to-blue-300/5',
-  LYD: 'from-violet-500/20 to-violet-300/5',
-  Gold: 'from-amber-500/20 to-amber-300/5',
-  Silver: 'from-slate-400/20 to-slate-200/5',
-}
+export const DEFAULT_ASSET_DEFINITIONS: AssetDefinition[] = [
+  { id: 'Dollars', label: 'دولار', icon: '$', color: 'from-sky-500/20 to-sky-300/5', supportsWeightRate: false },
+  { id: 'Euro', label: 'يورو', icon: '€', color: 'from-blue-500/20 to-blue-300/5', supportsWeightRate: false },
+  { id: 'LYD', label: 'دينار ليبي', icon: 'ل.د', color: 'from-violet-500/20 to-violet-300/5', supportsWeightRate: false },
+  { id: 'Gold', label: 'ذهب', icon: '🥇', color: 'from-amber-500/20 to-amber-300/5', supportsWeightRate: true },
+  { id: 'Silver', label: 'فضة', icon: '🥈', color: 'from-slate-400/20 to-slate-200/5', supportsWeightRate: true },
+]

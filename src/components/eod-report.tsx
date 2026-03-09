@@ -1,13 +1,14 @@
-import { EodSummaryRow } from '@/types/trading'
+import { AssetDefinition, EodSummaryRow } from '@/types/trading'
 import { formatCurrency, getAssetLabel } from '@/lib/trading'
 import { ChartColumnBig } from 'lucide-react'
 
 interface EodReportProps {
   rows: EodSummaryRow[]
+  assets: AssetDefinition[]
   open: boolean
 }
 
-export function EodReport({ rows, open }: EodReportProps) {
+export function EodReport({ rows, assets, open }: EodReportProps) {
   if (!open) return null
 
   return (
@@ -20,7 +21,7 @@ export function EodReport({ rows, open }: EodReportProps) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {rows.map((row) => (
           <article key={row.asset} className="rounded-2xl bg-fintech-panelSoft p-3 ring-1 ring-fintech-border">
-            <h3 className="text-sm font-medium text-white">{getAssetLabel(row.asset)}</h3>
+            <h3 className="text-sm font-medium text-white">{getAssetLabel(row.asset, assets)}</h3>
             <dl className="mt-2 space-y-1 text-xs text-fintech-muted">
               <div className="flex justify-between">
                 <dt>إجمالي الشراء</dt>

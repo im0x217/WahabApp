@@ -1,16 +1,17 @@
 import { formatCurrency, getAssetLabel } from '@/lib/trading'
-import { ASSETS, AssetType, Vault } from '@/types/trading'
+import { AssetDefinition, Vault } from '@/types/trading'
 import { ArrowDownToLine, ArrowUpFromLine, TrendingDown, TrendingUp, UserRound } from 'lucide-react'
 
 interface ClientVaultCardProps {
   vault: Vault
+  assets: AssetDefinition[]
   onBuy: (vaultId: string) => void
   onSell: (vaultId: string) => void
   onIncoming: (vaultId: string) => void
   onOutgoing: (vaultId: string) => void
 }
 
-export function ClientVaultCard({ vault, onBuy, onSell, onIncoming, onOutgoing }: ClientVaultCardProps) {
+export function ClientVaultCard({ vault, assets, onBuy, onSell, onIncoming, onOutgoing }: ClientVaultCardProps) {
   const total = Object.values(vault.balances).reduce((sum, value) => sum + value, 0)
 
   return (
@@ -21,16 +22,16 @@ export function ClientVaultCard({ vault, onBuy, onSell, onIncoming, onOutgoing }
       </div>
 
       <div className="mt-4 space-y-2">
-        {ASSETS.map((asset: AssetType) => {
-          const value = vault.balances[asset]
+        {assets.map((asset) => {
+          const value = vault.balances[asset.id] ?? 0
           const pct = total > 0 ? (value / total) * 100 : 0
           return (
-            <div key={asset} className="space-y-1">
+            <div key={asset.id} className="space-y-1">
               <div className="flex items-center justify-between text-xs text-fintech-muted">
-                <span>{getAssetLabel(asset)}</span>
+                <span>{asset.icon} {getAssetLabel(asset.id, assets)}</span>
                 <span className="numeric">{formatCurrency(value)}</span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-label={`نسبة ${getAssetLabel(asset)} في المحفظة`}>
+              <div className="h-1.5 rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-label={`نسبة ${getAssetLabel(asset.id, assets)} في المحفظة`}>
                 <div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-500" style={{ width: `${Math.max(pct, 2)}%` }} />
               </div>
             </div>

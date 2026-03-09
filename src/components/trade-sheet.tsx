@@ -1,10 +1,11 @@
-import { ASSETS, AssetType, RateUnit, TradeType, Vault } from '@/types/trading'
+import { AssetDefinition, AssetType, RateUnit, TradeType, Vault } from '@/types/trading'
 import { getAssetLabel, getRateUnitLabel, getTradeLabel } from '@/lib/trading'
 
 interface TradeSheetProps {
   isOpen: boolean
   mode: TradeType
   selectedVault: Vault | null
+  assets: AssetDefinition[]
   amount: string
   rate: string
   rateUnit: RateUnit
@@ -24,6 +25,7 @@ export function TradeSheet({
   isOpen,
   mode,
   selectedVault,
+  assets,
   amount,
   rate,
   rateUnit,
@@ -40,7 +42,7 @@ export function TradeSheet({
 }: TradeSheetProps) {
   if (!isOpen || !selectedVault) return null
   const needsRate = mode === 'Buy' || mode === 'Sell'
-  const supportsRateUnit = asset === 'Gold' || asset === 'Silver'
+  const supportsRateUnit = assets.find((entry) => entry.id === asset)?.supportsWeightRate ?? false
 
   const normalizeDecimalInput = (value: string) =>
     value
@@ -85,9 +87,9 @@ export function TradeSheet({
               onChange={(event) => onChangeAsset(event.target.value as AssetType)}
               className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
             >
-              {ASSETS.map((entry) => (
-                <option key={entry} value={entry}>
-                  {getAssetLabel(entry)}
+              {assets.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.icon} {getAssetLabel(entry.id, assets)}
                 </option>
               ))}
             </select>
