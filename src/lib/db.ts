@@ -61,19 +61,14 @@ const initializeDatabase = async () => {
   if (Number(count) > 0) return
 
   const now = new Date().toISOString()
-  await sql`BEGIN`
-  try {
+  await sql.begin(async (tx: any) => {
     for (const vault of seedVaults) {
-      await sql`
+      await tx`
         INSERT INTO vaults (id, name, kind, balances, updated_at)
-        VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${sql.json(vault.balances)}, ${now})
+        VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${tx.json(vault.balances)}, ${now})
       `
     }
-    await sql`COMMIT`
-  } catch (error) {
-    await sql`ROLLBACK`
-    throw error
-  }
+  })
 }
 
 const ensureDbReady = () => {
@@ -105,20 +100,15 @@ export const replaceVaults = async (vaults: Vault[]) => {
   const sql = getSql()
   const now = new Date().toISOString()
 
-  await sql`BEGIN`
-  try {
-    await sql`DELETE FROM vaults`
+  await sql.begin(async (tx: any) => {
+    await tx`DELETE FROM vaults`
     for (const vault of vaults) {
-      await sql`
+      await tx`
         INSERT INTO vaults (id, name, kind, balances, updated_at)
-        VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${sql.json(vault.balances)}, ${now})
+        VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${tx.json(vault.balances)}, ${now})
       `
     }
-    await sql`COMMIT`
-  } catch (error) {
-    await sql`ROLLBACK`
-    throw error
-  }
+  })
 }
 
 export const getTransactions = async (): Promise<Transaction[]> => {
