@@ -5,9 +5,11 @@ interface ClientVaultCardProps {
   vault: Vault
   onBuy: (vaultId: string) => void
   onSell: (vaultId: string) => void
+  onIncoming: (vaultId: string) => void
+  onOutgoing: (vaultId: string) => void
 }
 
-export function ClientVaultCard({ vault, onBuy, onSell }: ClientVaultCardProps) {
+export function ClientVaultCard({ vault, onBuy, onSell, onIncoming, onOutgoing }: ClientVaultCardProps) {
   const total = Object.values(vault.balances).reduce((sum, value) => sum + value, 0)
 
   return (
@@ -49,6 +51,20 @@ export function ClientVaultCard({ vault, onBuy, onSell }: ClientVaultCardProps) 
           className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-400 active:scale-[0.98]"
         >
           بيع
+        </button>
+        <button
+          type="button"
+          onClick={() => onIncoming(vault.id)}
+          className="rounded-2xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 active:scale-[0.98]"
+        >
+          وارد
+        </button>
+        <button
+          type="button"
+          onClick={() => onOutgoing(vault.id)}
+          className="rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-400 active:scale-[0.98]"
+        >
+          صادر
         </button>
       </div>
     </article>

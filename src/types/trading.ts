@@ -1,6 +1,6 @@
 export type AssetType = 'Dollars' | 'LYD' | 'Gold' | 'Silver'
 
-export type TradeType = 'Buy' | 'Sell'
+export type TradeType = 'Buy' | 'Sell' | 'Incoming' | 'Outgoing'
 
 export interface Vault {
   id: string

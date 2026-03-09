@@ -31,6 +31,7 @@ export function TradeSheet({
   onSubmit,
 }: TradeSheetProps) {
   if (!isOpen || !selectedVault) return null
+  const needsRate = mode === 'Buy' || mode === 'Sell'
 
   const normalizeDecimalInput = (value: string) =>
     value
@@ -83,21 +84,23 @@ export function TradeSheet({
             </select>
           </label>
 
-          <label className="block text-sm text-fintech-muted">
-            السعر
-            <input
-              type="text"
-              inputMode="decimal"
-              dir="ltr"
-              lang="en"
-              pattern="[0-9]*[.]?[0-9]*"
-              value={rate}
-              onChange={(event) => onChangeRate(normalizeDecimalInput(event.target.value))}
-              className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
-              placeholder="0.00"
-              required
-            />
-          </label>
+          {needsRate ? (
+            <label className="block text-sm text-fintech-muted">
+              السعر
+              <input
+                type="text"
+                inputMode="decimal"
+                dir="ltr"
+                lang="en"
+                pattern="[0-9]*[.]?[0-9]*"
+                value={rate}
+                onChange={(event) => onChangeRate(normalizeDecimalInput(event.target.value))}
+                className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
+                placeholder="0.00"
+                required
+              />
+            </label>
+          ) : null}
 
           {formError ? <p className="rounded-xl bg-rose-500/15 px-3 py-2 text-sm text-rose-300">{formError}</p> : null}
 
@@ -108,7 +111,13 @@ export function TradeSheet({
             <button
               type="submit"
               className={`rounded-2xl px-4 py-3 text-sm font-semibold text-white transition active:scale-[0.98] ${
-                mode === 'Buy' ? 'bg-emerald-500 hover:bg-emerald-400' : 'bg-rose-500 hover:bg-rose-400'
+                mode === 'Buy'
+                  ? 'bg-emerald-500 hover:bg-emerald-400'
+                  : mode === 'Sell'
+                    ? 'bg-rose-500 hover:bg-rose-400'
+                    : mode === 'Incoming'
+                      ? 'bg-sky-500 hover:bg-sky-400'
+                      : 'bg-amber-500 hover:bg-amber-400'
               }`}
             >
               تأكيد {getTradeLabel(mode)}

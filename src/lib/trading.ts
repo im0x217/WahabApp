@@ -10,6 +10,8 @@ export const assetLabels: Record<(typeof ASSETS)[number], string> = {
 export const tradeLabels: Record<Transaction['type'], string> = {
   Buy: 'شراء',
   Sell: 'بيع',
+  Incoming: 'وارد',
+  Outgoing: 'صادر',
 }
 
 export const getAssetLabel = (asset: (typeof ASSETS)[number]) => assetLabels[asset]
@@ -46,7 +48,7 @@ export const buildEodSummary = (ledger: Transaction[]): EodSummaryRow[] => {
     if (trade.type === 'Buy') {
       row.buyAmount += trade.amount
       row.buySum += trade.amount * trade.rate
-    } else {
+    } else if (trade.type === 'Sell') {
       row.sellAmount += trade.amount
       row.sellSum += trade.amount * trade.rate
     }
