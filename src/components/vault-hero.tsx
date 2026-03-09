@@ -22,8 +22,8 @@ export function VaultHero({ vault, assets }: VaultHeroProps) {
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Object.entries(vault.balances).map(([asset, value]) => (
           <div key={asset} className="rounded-2xl bg-white/5 p-3 ring-1 ring-white/10">
-            <p className="text-xs text-fintech-muted">{getAssetIcon(asset, assets)} {getAssetLabel(asset, assets)}</p>
-            <p className="numeric mt-1 text-lg font-semibold text-white">{formatCurrency(value)}</p>
+            <p className="text-[0.825rem] text-fintech-muted">{getAssetIcon(asset, assets)} {getAssetLabel(asset, assets)}</p>
+            <p className="numeric mt-1 text-[1.24rem] font-semibold text-white">{formatCurrency(value)}</p>
           </div>
         ))}
       </div>

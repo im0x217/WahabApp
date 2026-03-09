@@ -16,8 +16,8 @@ export function AssetStrip({ vault, assets, onOpenAssetManager }: AssetStripProp
             key={asset.id}
             className={`rounded-2xl bg-gradient-to-br ${asset.color} glass flex min-h-[124px] flex-col justify-between p-4 transition duration-300 hover:scale-[1.01]`}
           >
-            <p className="text-sm text-fintech-muted">{asset.icon} {getAssetLabel(asset.id, assets)}</p>
-            <p className="numeric mt-2 text-xl font-semibold text-white">{formatCurrency(vault.balances[asset.id] ?? 0)}</p>
+            <p className="text-[0.825rem] text-fintech-muted">{asset.icon} {getAssetLabel(asset.id, assets)}</p>
+            <p className="numeric mt-2 text-[1.24rem] font-semibold text-white">{formatCurrency(vault.balances[asset.id] ?? 0)}</p>
           </article>
         ))}
 
