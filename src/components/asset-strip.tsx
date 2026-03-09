@@ -10,7 +10,7 @@ interface AssetStripProps {
 export function AssetStrip({ vault, assets, onOpenAssetManager }: AssetStripProps) {
   return (
     <section aria-label="أصول الخزنة الرئيسية" className="mt-4">
-      <div className="grid grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto pb-1 sm:grid-flow-row sm:auto-cols-fr sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-flow-col auto-cols-[88%] gap-3 overflow-x-auto pb-0 sm:grid-flow-row sm:auto-cols-fr sm:grid-cols-2 lg:grid-cols-4">
         {assets.map((asset) => (
           <article
             key={asset.id}

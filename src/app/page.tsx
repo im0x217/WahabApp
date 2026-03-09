@@ -417,9 +417,9 @@ export default function HomePage() {
       </section>
 
       {showAssetCrud ? (
-        <div className="fixed inset-0 z-50 bg-black/60 p-2 sm:p-4" onClick={resetAssetDraft}>
+        <div className="fixed inset-0 z-50 bg-black/60 p-0 sm:p-4" onClick={resetAssetDraft}>
           <div
-            className="glass mx-auto mt-2 flex max-h-[92dvh] w-full max-w-3xl flex-col rounded-3xl p-3 sm:mt-6 sm:p-4"
+            className="glass mx-auto flex h-[100dvh] w-full max-w-3xl flex-col rounded-none p-3 sm:mt-6 sm:h-auto sm:max-h-[92dvh] sm:rounded-3xl sm:p-4"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -433,7 +433,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="mb-3 grid gap-2 overflow-y-auto pr-1">
+            <div className="mb-3 grid gap-2 overflow-x-hidden overflow-y-auto">
               {assets.map((entry) => (
                 <article
                   key={entry.id}
