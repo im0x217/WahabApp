@@ -41,12 +41,19 @@ export default function HomePage() {
     setFormError('')
   }
 
+  const parseDecimal = (value: string) => {
+    const normalized = value
+      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+      .replace(/,/g, '.')
+    return Number(normalized)
+  }
+
   const submitTrade = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!activeVaultId) return
 
-    const parsedAmount = Number(amount)
-    const parsedRate = Number(rate)
+    const parsedAmount = parseDecimal(amount)
+    const parsedRate = parseDecimal(rate)
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       setFormError('يجب أن تكون الكمية أكبر من صفر.')

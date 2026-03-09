@@ -32,9 +32,16 @@ export function TradeSheet({
 }: TradeSheetProps) {
   if (!isOpen || !selectedVault) return null
 
+  const normalizeDecimalInput = (value: string) =>
+    value
+      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+      .replace(/,/g, '.')
+      .replace(/[^0-9.]/g, '')
+      .replace(/(\..*)\./g, '$1')
+
   return (
     <div className="fixed inset-0 z-50 grid items-end bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="trade-title">
-      <div className="glass w-full rounded-t-3xl p-5 sm:mx-auto sm:max-w-lg sm:rounded-3xl">
+      <div className="glass w-full max-h-[92dvh] overflow-y-auto rounded-t-3xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-5 sm:mx-auto sm:max-h-none sm:max-w-lg sm:rounded-3xl sm:p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 id="trade-title" className="text-lg font-semibold text-white">
             {getTradeLabel(mode)} • {selectedVault.name}
@@ -48,10 +55,13 @@ export function TradeSheet({
           <label className="block text-sm text-fintech-muted">
             الكمية
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
+              dir="ltr"
+              lang="en"
+              pattern="[0-9]*[.]?[0-9]*"
               value={amount}
-              onChange={(event) => onChangeAmount(event.target.value)}
+              onChange={(event) => onChangeAmount(normalizeDecimalInput(event.target.value))}
               className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
               placeholder="0.00"
               required
@@ -76,10 +86,13 @@ export function TradeSheet({
           <label className="block text-sm text-fintech-muted">
             السعر
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
+              dir="ltr"
+              lang="en"
+              pattern="[0-9]*[.]?[0-9]*"
               value={rate}
-              onChange={(event) => onChangeRate(event.target.value)}
+              onChange={(event) => onChangeRate(normalizeDecimalInput(event.target.value))}
               className="mt-1 w-full rounded-2xl border border-fintech-border bg-fintech-panelSoft px-4 py-3 text-white outline-none ring-sky-400 transition focus:ring"
               placeholder="0.00"
               required
