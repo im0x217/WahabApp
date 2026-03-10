@@ -6,6 +6,7 @@ import { AssetStrip } from '@/components/asset-strip'
 import { BottomNav } from '@/components/bottom-nav'
 import { ClientVaultCard } from '@/components/client-vault-card'
 import { EodReport } from '@/components/eod-report'
+import { LoadingRoller } from '@/components/loading-roller'
 import { TradeSheet } from '@/components/trade-sheet'
 import { VaultHero } from '@/components/vault-hero'
 import { buildEodSummary, formatDateTime, formatCurrency, getAssetIcon, getAssetLabel, getRateUnitLabel, getTradeLabel, seedVaults } from '@/lib/trading'
@@ -398,9 +399,7 @@ export default function HomePage() {
   if (!isBootstrapped) {
     return (
       <main className="mx-auto w-full max-w-7xl px-3 pb-24 pt-4 sm:px-5 sm:pb-8">
-        <section className="glass rounded-3xl p-6">
-          <p className="text-sm text-fintech-muted">جاري تحميل البيانات...</p>
-        </section>
+        <LoadingRoller label="جاري تحميل بيانات الخزائن..." />
       </main>
     )
   }

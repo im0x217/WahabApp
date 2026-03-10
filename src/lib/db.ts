@@ -8,6 +8,8 @@ const globalForSql = globalThis as typeof globalThis & {
   __wahabDbInitPromise?: Promise<void>
 }
 
+const legacySeedClientIds = ['client-01', 'client-02']
+
 const getSql = () => {
   if (globalForSql.__wahabSqlClient) {
     return globalForSql.__wahabSqlClient
@@ -109,6 +111,9 @@ const initializeDatabase = async () => {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `
+
+  await sql`DELETE FROM clients WHERE id = ANY(${sql.array(legacySeedClientIds)})`
+  await sql`DELETE FROM vaults WHERE kind = 'Client' AND id = ANY(${sql.array(legacySeedClientIds)})`
 
   await sql`
     CREATE TABLE IF NOT EXISTS transactions (

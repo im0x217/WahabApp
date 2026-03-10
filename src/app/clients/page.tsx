@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import { BottomNav } from '@/components/bottom-nav'
+import { LoadingRoller } from '@/components/loading-roller'
 import type { AssetDefinition, ClientProfile, Vault } from '@/types/trading'
 import { formatCurrency, getAssetIcon, getAssetLabel, getVaultGeneralTotal } from '@/lib/trading'
 import { Phone, UserRound, Wallet } from 'lucide-react'
@@ -126,9 +127,7 @@ export default function ClientsPage() {
   if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-6xl px-3 pb-24 pt-4 sm:px-5 sm:pb-8">
-        <section className="glass rounded-3xl p-6">
-          <p className="text-sm text-fintech-muted">جاري تحميل العملاء...</p>
-        </section>
+        <LoadingRoller label="جاري تحميل العملاء..." />
         <BottomNav />
       </main>
     )
