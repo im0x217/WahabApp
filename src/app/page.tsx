@@ -30,6 +30,7 @@ export default function HomePage() {
   const [showAssetCrud, setShowAssetCrud] = useState(false)
   const [isClient, setIsClient] = useState(false)
   const [isBootstrapped, setIsBootstrapped] = useState(false)
+  const [pendingOps, setPendingOps] = useState(0)
   const [assetTypeError, setAssetTypeError] = useState('')
   const [draggingAssetId, setDraggingAssetId] = useState<string | null>(null)
   const [dragOverAssetId, setDragOverAssetId] = useState<string | null>(null)
@@ -52,16 +53,27 @@ export default function HomePage() {
     }))
   }
 
+  const withDbLock = async <T,>(operation: () => Promise<T>) => {
+    setPendingOps((previous) => previous + 1)
+    try {
+      return await operation()
+    } finally {
+      setPendingOps((previous) => Math.max(0, previous - 1))
+    }
+  }
+
   useEffect(() => {
     let mounted = true
 
     const loadInitialData = async () => {
       try {
-        const [assetsResponse, vaultsResponse, tradesResponse] = await Promise.all([
-          fetch('/api/assets', { cache: 'no-store' }),
-          fetch('/api/vaults', { cache: 'no-store' }),
-          fetch('/api/trades', { cache: 'no-store' }),
-        ])
+        const [assetsResponse, vaultsResponse, tradesResponse] = await withDbLock(async () =>
+          Promise.all([
+            fetch('/api/assets', { cache: 'no-store' }),
+            fetch('/api/vaults', { cache: 'no-store' }),
+            fetch('/api/trades', { cache: 'no-store' }),
+          ]),
+        )
 
         if (!assetsResponse.ok || !vaultsResponse.ok || !tradesResponse.ok) {
           return
@@ -289,28 +301,30 @@ export default function HomePage() {
 
     setLedger((previous) => [entry, ...previous])
 
-    const [tradeResponse, vaultsResponse] = await Promise.all([
-      fetch('/api/trades', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: entry.id,
-          vaultId: entry.vaultId,
-          type: entry.type,
-          asset: entry.asset,
-          amount: entry.amount,
-          rate: entry.rate,
-          rateUnit: entry.rateUnit,
-          description: entry.description,
-          timestamp: entry.timestamp,
+    const [tradeResponse, vaultsResponse] = await withDbLock(async () =>
+      Promise.all([
+        fetch('/api/trades', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: entry.id,
+            vaultId: entry.vaultId,
+            type: entry.type,
+            asset: entry.asset,
+            amount: entry.amount,
+            rate: entry.rate,
+            rateUnit: entry.rateUnit,
+            description: entry.description,
+            timestamp: entry.timestamp,
+          }),
         }),
-      }),
-      fetch('/api/vaults', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: nextVaults }),
-      }),
-    ])
+        fetch('/api/vaults', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: nextVaults }),
+        }),
+      ]),
+    )
 
     if (!tradeResponse.ok || !vaultsResponse.ok) {
       setVaults(previousVaults)
@@ -323,11 +337,13 @@ export default function HomePage() {
   }
 
   const removeAssetType = async (id: string) => {
-    const response = await fetch('/api/assets', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
+    const response = await withDbLock(async () =>
+      fetch('/api/assets', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      }),
+    )
 
     if (!response.ok) {
       const payload = (await response.json().catch(() => ({}))) as { error?: string }
@@ -335,7 +351,7 @@ export default function HomePage() {
       return
     }
 
-    const refreshed = await fetch('/api/assets', { cache: 'no-store' })
+    const refreshed = await withDbLock(async () => fetch('/api/assets', { cache: 'no-store' }))
     if (!refreshed.ok) return
     const payload = (await refreshed.json()) as { items?: AssetDefinition[] }
     if (Array.isArray(payload.items) && payload.items.length > 0) {
@@ -345,11 +361,13 @@ export default function HomePage() {
   }
 
   const persistAssetOrder = async (nextAssets: AssetDefinition[]) => {
-    const response = await fetch('/api/assets', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: nextAssets.map((entry) => entry.id) }),
-    })
+    const response = await withDbLock(async () =>
+      fetch('/api/assets', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: nextAssets.map((entry) => entry.id) }),
+      }),
+    )
 
     if (!response.ok) {
       const payload = (await response.json().catch(() => ({}))) as { error?: string }
@@ -583,11 +601,13 @@ export default function HomePage() {
                           setAssetTypeError('')
 
                           const method = editingAssetId ? 'PUT' : 'POST'
-                          const response = await fetch('/api/assets', {
-                            method,
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(assetDraft),
-                          })
+                          const response = await withDbLock(async () =>
+                            fetch('/api/assets', {
+                              method,
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(assetDraft),
+                            }),
+                          )
 
                           if (!response.ok) {
                             const payload = (await response.json().catch(() => ({}))) as { error?: string }
@@ -595,7 +615,7 @@ export default function HomePage() {
                             return
                           }
 
-                          const refreshed = await fetch('/api/assets', { cache: 'no-store' })
+                          const refreshed = await withDbLock(async () => fetch('/api/assets', { cache: 'no-store' }))
                           if (!refreshed.ok) return
                           const payload = (await refreshed.json()) as { items?: AssetDefinition[] }
                           if (Array.isArray(payload.items) && payload.items.length > 0) {
@@ -760,6 +780,12 @@ export default function HomePage() {
         onChangeRateUnit={setRateUnit}
         onSubmit={submitTrade}
       />
+
+      {pendingOps > 0 ? (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 backdrop-blur-sm">
+          <LoadingRoller label="جاري تنفيذ العملية..." />
+        </div>
+      ) : null}
 
       <BottomNav />
     </main>

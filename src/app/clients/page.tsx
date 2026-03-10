@@ -20,14 +20,26 @@ export default function ClientsPage() {
   const [draft, setDraft] = useState<ClientProfile>(emptyDraft)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [pendingOps, setPendingOps] = useState(0)
   const [error, setError] = useState('')
 
+  const withDbLock = async <T,>(operation: () => Promise<T>) => {
+    setPendingOps((previous) => previous + 1)
+    try {
+      return await operation()
+    } finally {
+      setPendingOps((previous) => Math.max(0, previous - 1))
+    }
+  }
+
   const loadClients = async () => {
-    const [clientsResponse, assetsResponse, vaultsResponse] = await Promise.all([
-      fetch('/api/clients', { cache: 'no-store' }),
-      fetch('/api/assets', { cache: 'no-store' }),
-      fetch('/api/vaults', { cache: 'no-store' }),
-    ])
+    const [clientsResponse, assetsResponse, vaultsResponse] = await withDbLock(async () =>
+      Promise.all([
+        fetch('/api/clients', { cache: 'no-store' }),
+        fetch('/api/assets', { cache: 'no-store' }),
+        fetch('/api/vaults', { cache: 'no-store' }),
+      ]),
+    )
 
     if (!clientsResponse.ok || !assetsResponse.ok || !vaultsResponse.ok) {
       throw new Error('تعذر تحميل العملاء الآن.')
@@ -87,11 +99,13 @@ export default function ClientsPage() {
       return
     }
 
-    const response = await fetch('/api/clients', {
-      method: editingId ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
+    const response = await withDbLock(async () =>
+      fetch('/api/clients', {
+        method: editingId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }),
+    )
 
     if (!response.ok) {
       const body = (await response.json().catch(() => ({}))) as { error?: string }
@@ -106,11 +120,13 @@ export default function ClientsPage() {
   const onDelete = async (id: string) => {
     setError('')
 
-    const response = await fetch('/api/clients', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
+    const response = await withDbLock(async () =>
+      fetch('/api/clients', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      }),
+    )
 
     if (!response.ok) {
       const body = (await response.json().catch(() => ({}))) as { error?: string }
@@ -236,6 +252,12 @@ export default function ClientsPage() {
           </div>
         )}
       </section>
+
+      {pendingOps > 0 ? (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 backdrop-blur-sm">
+          <LoadingRoller label="جاري تنفيذ العملية..." />
+        </div>
+      ) : null}
 
       <BottomNav />
     </main>
