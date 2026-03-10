@@ -1,0 +1,205 @@
+'use client'
+
+import { FormEvent, useEffect, useState } from 'react'
+import { BottomNav } from '@/components/bottom-nav'
+import type { ClientProfile } from '@/types/trading'
+import { Phone, UserRound } from 'lucide-react'
+
+const emptyDraft: ClientProfile = {
+  id: '',
+  name: '',
+  phone: '',
+}
+
+export default function ClientsPage() {
+  const [clients, setClients] = useState<ClientProfile[]>([])
+  const [draft, setDraft] = useState<ClientProfile>(emptyDraft)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const loadClients = async () => {
+    const response = await fetch('/api/clients', { cache: 'no-store' })
+    if (!response.ok) {
+      throw new Error('تعذر تحميل العملاء الآن.')
+    }
+
+    const payload = (await response.json()) as { items?: ClientProfile[] }
+    setClients(Array.isArray(payload.items) ? payload.items : [])
+  }
+
+  useEffect(() => {
+    let mounted = true
+
+    const bootstrap = async () => {
+      try {
+        await loadClients()
+      } catch (loadError) {
+        if (mounted) {
+          const message = loadError instanceof Error ? loadError.message : 'تعذر تحميل العملاء الآن.'
+          setError(message)
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    bootstrap()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const resetForm = () => {
+    setDraft(emptyDraft)
+    setEditingId(null)
+  }
+
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError('')
+
+    const payload = {
+      id: editingId ?? undefined,
+      name: draft.name.trim(),
+      phone: draft.phone.trim(),
+    }
+
+    if (!payload.name || !payload.phone) {
+      setError('يرجى إدخال الاسم ورقم الهاتف.')
+      return
+    }
+
+    const response = await fetch('/api/clients', {
+      method: editingId ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({}))) as { error?: string }
+      setError(body.error ?? 'تعذر حفظ بيانات العميل الآن.')
+      return
+    }
+
+    await loadClients()
+    resetForm()
+  }
+
+  const onDelete = async (id: string) => {
+    setError('')
+
+    const response = await fetch('/api/clients', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({}))) as { error?: string }
+      setError(body.error ?? 'تعذر حذف العميل الآن.')
+      return
+    }
+
+    await loadClients()
+    if (editingId === id) {
+      resetForm()
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-3 pb-24 pt-4 sm:px-5 sm:pb-8">
+        <section className="glass rounded-3xl p-6">
+          <p className="text-sm text-fintech-muted">جاري تحميل العملاء...</p>
+        </section>
+        <BottomNav />
+      </main>
+    )
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-6xl px-3 pb-24 pt-4 sm:px-5 sm:pb-8">
+      <section className="glass rounded-3xl p-5">
+        <p className="flex items-center gap-2 text-sm text-fintech-muted"><UserRound size={16} />إدارة العملاء</p>
+        <h1 className="mt-1 text-2xl font-semibold text-white sm:text-3xl">بيانات العملاء</h1>
+
+        <form className="mt-5 grid gap-2 sm:grid-cols-2" onSubmit={onSubmit}>
+          <input
+            value={draft.name}
+            onChange={(event) => setDraft((previous) => ({ ...previous, name: event.target.value }))}
+            placeholder="اسم العميل"
+            className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
+            required
+          />
+          <input
+            value={draft.phone}
+            onChange={(event) => setDraft((previous) => ({ ...previous, phone: event.target.value }))}
+            placeholder="رقم الهاتف"
+            className="rounded-2xl border border-fintech-border bg-fintech-panelSoft px-3 py-2 text-sm text-white"
+            required
+          />
+
+          {error ? <p className="sm:col-span-2 rounded-xl bg-rose-500/15 px-3 py-2 text-sm text-rose-300">{error}</p> : null}
+
+          <div className="sm:col-span-2 flex gap-2">
+            <button type="submit" className="rounded-2xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white">
+              {editingId ? 'حفظ التعديل' : 'إضافة عميل'}
+            </button>
+            {editingId ? (
+              <button type="button" className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-fintech-text" onClick={resetForm}>
+                إلغاء
+              </button>
+            ) : null}
+          </div>
+        </form>
+      </section>
+
+      <section className="mt-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">قائمة العملاء</h2>
+          <span className="text-xs text-fintech-muted">{clients.length} عميل</span>
+        </div>
+
+        {clients.length === 0 ? (
+          <div className="glass rounded-2xl p-4 text-sm text-fintech-muted">لا يوجد عملاء بعد.</div>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {clients.map((client) => (
+              <article key={client.id} className="glass rounded-3xl p-4 transition duration-300 hover:translate-y-[-2px]">
+                <p className="text-base font-semibold text-white">{client.name}</p>
+                <p className="mt-2 flex items-center gap-1 text-sm text-fintech-muted"><Phone size={14} />{client.phone}</p>
+
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingId(client.id)
+                      setDraft(client)
+                      setError('')
+                    }}
+                    className="rounded-xl bg-white/10 px-3 py-1.5 text-xs text-fintech-text"
+                  >
+                    تعديل
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(client.id)}
+                    className="rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs text-rose-300"
+                  >
+                    حذف
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <BottomNav />
+    </main>
+  )
+}

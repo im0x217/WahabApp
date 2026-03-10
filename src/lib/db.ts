@@ -1,5 +1,5 @@
 import postgres from 'postgres'
-import type { AssetDefinition, Transaction, Vault } from '@/types/trading'
+import type { AssetDefinition, ClientProfile, Transaction, Vault } from '@/types/trading'
 import { seedVaults } from '@/lib/trading'
 import { DEFAULT_ASSET_DEFINITIONS } from '@/types/trading'
 
@@ -95,6 +95,16 @@ const initializeDatabase = async () => {
   `
 
   await sql`
+    CREATE TABLE IF NOT EXISTS clients (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `
+
+  await sql`
     CREATE TABLE IF NOT EXISTS transactions (
       id TEXT PRIMARY KEY,
       vault_id TEXT NOT NULL,
@@ -124,6 +134,19 @@ const initializeDatabase = async () => {
       await tx`
         INSERT INTO vaults (id, name, kind, balances, updated_at)
         VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${tx.json(normalizeBalances(vault.balances, assetIds))}, ${now})
+      `
+    }
+  })
+
+  const [{ clients_count }] = await sql<{ clients_count: string }[]>`SELECT COUNT(*)::text AS clients_count FROM clients`
+  if (Number(clients_count) > 0) return
+
+  await sql.begin(async (tx: any) => {
+    const clientVaults = seedVaults.filter((vault) => vault.kind === 'Client')
+    for (const vault of clientVaults) {
+      await tx`
+        INSERT INTO clients (id, name, phone, updated_at)
+        VALUES (${vault.id}, ${vault.name}, ${'+218000000000'}, ${now})
       `
     }
   })
@@ -370,4 +393,49 @@ export const resetAllSources = async () => {
       `
     }
   })
+}
+
+export const getClients = async (): Promise<ClientProfile[]> => {
+  await ensureDbReady()
+  const sql = getSql()
+  const rows = await sql<Array<{ id: string; name: string; phone: string }>>`
+    SELECT id, name, phone
+    FROM clients
+    ORDER BY created_at DESC
+  `
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+  }))
+}
+
+export const createClient = async (client: ClientProfile): Promise<ClientProfile> => {
+  await ensureDbReady()
+  const sql = getSql()
+  await sql`
+    INSERT INTO clients (id, name, phone, updated_at)
+    VALUES (${client.id}, ${client.name}, ${client.phone}, NOW())
+  `
+
+  return client
+}
+
+export const updateClient = async (client: ClientProfile): Promise<ClientProfile> => {
+  await ensureDbReady()
+  const sql = getSql()
+  await sql`
+    UPDATE clients
+    SET name = ${client.name}, phone = ${client.phone}, updated_at = NOW()
+    WHERE id = ${client.id}
+  `
+
+  return client
+}
+
+export const deleteClient = async (id: string) => {
+  await ensureDbReady()
+  const sql = getSql()
+  await sql`DELETE FROM clients WHERE id = ${id}`
 }

@@ -34,6 +34,12 @@ export interface Transaction {
   timestamp: string
 }
 
+export interface ClientProfile {
+  id: string
+  name: string
+  phone: string
+}
+
 export interface EodSummaryRow {
   asset: string
   totalBought: number
