@@ -2,8 +2,9 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import { BottomNav } from '@/components/bottom-nav'
-import type { ClientProfile } from '@/types/trading'
-import { Phone, UserRound } from 'lucide-react'
+import type { AssetDefinition, ClientProfile, Vault } from '@/types/trading'
+import { formatCurrency, getAssetIcon, getAssetLabel, getVaultGeneralTotal } from '@/lib/trading'
+import { Phone, UserRound, Wallet } from 'lucide-react'
 
 const emptyDraft: ClientProfile = {
   id: '',
@@ -12,6 +13,8 @@ const emptyDraft: ClientProfile = {
 }
 
 export default function ClientsPage() {
+  const [assets, setAssets] = useState<AssetDefinition[]>([])
+  const [vaults, setVaults] = useState<Vault[]>([])
   const [clients, setClients] = useState<ClientProfile[]>([])
   const [draft, setDraft] = useState<ClientProfile>(emptyDraft)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -19,13 +22,23 @@ export default function ClientsPage() {
   const [error, setError] = useState('')
 
   const loadClients = async () => {
-    const response = await fetch('/api/clients', { cache: 'no-store' })
-    if (!response.ok) {
+    const [clientsResponse, assetsResponse, vaultsResponse] = await Promise.all([
+      fetch('/api/clients', { cache: 'no-store' }),
+      fetch('/api/assets', { cache: 'no-store' }),
+      fetch('/api/vaults', { cache: 'no-store' }),
+    ])
+
+    if (!clientsResponse.ok || !assetsResponse.ok || !vaultsResponse.ok) {
       throw new Error('تعذر تحميل العملاء الآن.')
     }
 
-    const payload = (await response.json()) as { items?: ClientProfile[] }
-    setClients(Array.isArray(payload.items) ? payload.items : [])
+    const clientsPayload = (await clientsResponse.json()) as { items?: ClientProfile[] }
+    const assetsPayload = (await assetsResponse.json()) as { items?: AssetDefinition[] }
+    const vaultsPayload = (await vaultsResponse.json()) as { items?: Vault[] }
+
+    setClients(Array.isArray(clientsPayload.items) ? clientsPayload.items : [])
+    setAssets(Array.isArray(assetsPayload.items) ? assetsPayload.items : [])
+    setVaults(Array.isArray(vaultsPayload.items) ? vaultsPayload.items : [])
   }
 
   useEffect(() => {
@@ -172,6 +185,32 @@ export default function ClientsPage() {
               <article key={client.id} className="glass rounded-3xl p-4 transition duration-300 hover:translate-y-[-2px]">
                 <p className="text-base font-semibold text-white">{client.name}</p>
                 <p className="mt-2 flex items-center gap-1 text-sm text-fintech-muted"><Phone size={14} />{client.phone}</p>
+
+                {(() => {
+                  const vault = vaults.find((item) => item.id === client.id && item.kind === 'Client')
+                  if (!vault) {
+                    return <p className="mt-3 text-xs text-rose-300">لا توجد خزنة فرعية مرتبطة بهذا العميل.</p>
+                  }
+
+                  const totalValue = getVaultGeneralTotal(vault, assets)
+                  return (
+                    <div className="mt-4 rounded-2xl bg-white/5 p-3 ring-1 ring-white/10">
+                      <p className="flex items-center gap-2 text-xs tracking-wide text-fintech-muted"><Wallet size={13} />تفاصيل الخزنة الفرعية</p>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        {assets.map((asset) => (
+                          <div key={`${client.id}-${asset.id}`} className="rounded-xl bg-fintech-panelSoft p-2">
+                            <p className="text-[11px] text-fintech-muted">{getAssetIcon(asset.id, assets)} {getAssetLabel(asset.id, assets)}</p>
+                            <p className="numeric mt-1 text-sm font-semibold text-white">{formatCurrency(vault.balances[asset.id] ?? 0)}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 rounded-xl bg-fintech-panelSoft p-2">
+                        <p className="text-[11px] text-fintech-muted">إجمالي القيمة العامة</p>
+                        <p className="numeric mt-1 text-base font-bold text-white">{formatCurrency(totalValue)}</p>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 <div className="mt-4 flex gap-2">
                   <button

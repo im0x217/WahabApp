@@ -39,6 +39,12 @@ const normalizeBalances = (balances: Partial<Vault['balances']> | null | undefin
   return normalized
 }
 
+const normalizeClientVaultName = (name: string) => {
+  const trimmed = name.trim()
+  if (!trimmed) return 'العميل'
+  return trimmed.startsWith('العميل:') ? trimmed : `العميل: ${trimmed}`
+}
+
 const initializeDatabase = async () => {
   const sql = getSql()
   await sql`
@@ -123,33 +129,37 @@ const initializeDatabase = async () => {
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_timestamp ON transactions (timestamp DESC)`
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_vault_id ON transactions (vault_id)`
 
-  const assetIds = (await sql<Array<{ id: string }>>`SELECT id FROM asset_types ORDER BY created_at ASC`).map((row) => row.id)
+  const assetIds = (await sql<Array<{ id: string }>>`SELECT id FROM asset_types ORDER BY sort_order ASC, created_at ASC`).map((row) => row.id)
 
   const [{ count }] = await sql<{ count: string }[]>`SELECT COUNT(*)::text AS count FROM vaults`
-  if (Number(count) > 0) return
-
-  const now = new Date().toISOString()
-  await sql.begin(async (tx: any) => {
-    for (const vault of seedVaults) {
-      await tx`
-        INSERT INTO vaults (id, name, kind, balances, updated_at)
-        VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${tx.json(normalizeBalances(vault.balances, assetIds))}, ${now})
-      `
-    }
-  })
+  if (Number(count) === 0) {
+    const now = new Date().toISOString()
+    await sql.begin(async (tx: any) => {
+      for (const vault of seedVaults) {
+        await tx`
+          INSERT INTO vaults (id, name, kind, balances, updated_at)
+          VALUES (${vault.id}, ${vault.name}, ${vault.kind}, ${tx.json(normalizeBalances(vault.balances, assetIds))}, ${now})
+        `
+      }
+    })
+  }
 
   const [{ clients_count }] = await sql<{ clients_count: string }[]>`SELECT COUNT(*)::text AS clients_count FROM clients`
-  if (Number(clients_count) > 0) return
+  if (Number(clients_count) === 0) {
+    const now = new Date().toISOString()
+    const existingClientVaults = await sql<Array<{ id: string; name: string }>>`
+      SELECT id, name FROM vaults WHERE kind = 'Client' ORDER BY name ASC
+    `
 
-  await sql.begin(async (tx: any) => {
-    const clientVaults = seedVaults.filter((vault) => vault.kind === 'Client')
-    for (const vault of clientVaults) {
-      await tx`
-        INSERT INTO clients (id, name, phone, updated_at)
-        VALUES (${vault.id}, ${vault.name}, ${'+218000000000'}, ${now})
-      `
-    }
-  })
+    await sql.begin(async (tx: any) => {
+      for (const vault of existingClientVaults) {
+        await tx`
+          INSERT INTO clients (id, name, phone, updated_at)
+          VALUES (${vault.id}, ${vault.name}, ${'+218000000000'}, ${now})
+        `
+      }
+    })
+  }
 }
 
 const ensureDbReady = () => {
@@ -414,10 +424,20 @@ export const getClients = async (): Promise<ClientProfile[]> => {
 export const createClient = async (client: ClientProfile): Promise<ClientProfile> => {
   await ensureDbReady()
   const sql = getSql()
-  await sql`
-    INSERT INTO clients (id, name, phone, updated_at)
-    VALUES (${client.id}, ${client.name}, ${client.phone}, NOW())
-  `
+  const assetIds = await getAssetIds()
+  const emptyBalances = Object.fromEntries(assetIds.map((assetId) => [assetId, 0]))
+
+  await sql.begin(async (tx: any) => {
+    await tx`
+      INSERT INTO clients (id, name, phone, updated_at)
+      VALUES (${client.id}, ${client.name}, ${client.phone}, NOW())
+    `
+
+    await tx`
+      INSERT INTO vaults (id, name, kind, balances, updated_at)
+      VALUES (${client.id}, ${normalizeClientVaultName(client.name)}, ${'Client'}, ${tx.json(emptyBalances)}, NOW())
+    `
+  })
 
   return client
 }
@@ -425,11 +445,19 @@ export const createClient = async (client: ClientProfile): Promise<ClientProfile
 export const updateClient = async (client: ClientProfile): Promise<ClientProfile> => {
   await ensureDbReady()
   const sql = getSql()
-  await sql`
-    UPDATE clients
-    SET name = ${client.name}, phone = ${client.phone}, updated_at = NOW()
-    WHERE id = ${client.id}
-  `
+  await sql.begin(async (tx: any) => {
+    await tx`
+      UPDATE clients
+      SET name = ${client.name}, phone = ${client.phone}, updated_at = NOW()
+      WHERE id = ${client.id}
+    `
+
+    await tx`
+      UPDATE vaults
+      SET name = ${normalizeClientVaultName(client.name)}, updated_at = NOW()
+      WHERE id = ${client.id} AND kind = 'Client'
+    `
+  })
 
   return client
 }
@@ -437,5 +465,8 @@ export const updateClient = async (client: ClientProfile): Promise<ClientProfile
 export const deleteClient = async (id: string) => {
   await ensureDbReady()
   const sql = getSql()
-  await sql`DELETE FROM clients WHERE id = ${id}`
+  await sql.begin(async (tx: any) => {
+    await tx`DELETE FROM clients WHERE id = ${id}`
+    await tx`DELETE FROM vaults WHERE id = ${id} AND kind = 'Client'`
+  })
 }
